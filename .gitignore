@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.venv/
+venv/
+env/
+*.tmp
+*.temp
+*.log
+
+# Original BCSC Dataset Files
+data/01_raw/risk.csv
+data/01_raw/risk.txt
+
+# Add any other original source dataset files here
