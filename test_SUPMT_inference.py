@@ -437,8 +437,8 @@ def build_report(rows: list[dict[str, Any]], cases: list[dict[str, Any]], elapse
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run BCSC SUPMT inference tests.")
     parser.add_argument("--cases", default=None, help="Path to test cases JSON file.")
-    parser.add_argument("--report", default=str(PROJECT_ROOT / "SUPMT_TEST_REPORT.md"))
-    parser.add_argument("--csv", default=str(PROJECT_ROOT / "SUPMT_TEST_RESULTS.csv"))
+    parser.add_argument("--report", default=str(PROJECT_ROOT / "outputs" / "evaluation" / "SUPMT_TEST_REPORT.md"))
+    parser.add_argument("--csv", default=str(PROJECT_ROOT / "outputs" / "evaluation" / "SUPMT_TEST_RESULTS.csv"))
     args = parser.parse_args()
 
     cases_path = find_cases_file(args.cases)
