@@ -1,47 +1,142 @@
 # BCSC Risk Estimation
 
-## Objective
+## Project Overview
 
-Research organization for analysis of the Breast Cancer Surveillance Consortium
-(BCSC) risk estimation dataset. The project investigates clinical and
-mammography-related factors associated with breast cancer and preserves existing
-exploratory work for future modeling.
+BCSC Risk Estimation is a research and engineering repository for analyzing the
+Breast Cancer Surveillance Consortium (BCSC) risk estimation dataset and building
+a reproducible preprocessing, training, evaluation, and inference pipeline for
+breast cancer risk estimation.
 
-This project is research and clinical decision-support work. It is not a
-diagnostic system and does not replace professional medical judgment.
+The repository contains data conversion, exploratory analysis, weighted data
+splitting, leakage-safe preprocessing, model training/configuration, calibration,
+evaluation, a Modified Barlow Architecture experiment, and a final inference
+system (`SUPMT.py`).
 
-## Dataset
+This is a research / proof-of-concept project. It is not a diagnostic system and
+does not replace professional medical judgment.
 
-The source dataset is an aggregated BCSC dataset originally provided as
-`risk.txt` and converted to CSV. The `count` column is a frequency weight; each
-row represents a group of examinations with shared characteristics and outcome.
+## Current Implementation Status
 
-## Current workflow
+Implemented and verified in the repository:
 
-- Raw data acquisition and TXT-to-CSV conversion are preserved.
-- Duplicate-row filtering and an interim filtered dataset are preserved.
-- Exploratory data analysis is preserved.
-- Feature-to-cancer association analysis is preserved.
-- PCA and t-SNE visualization outputs are preserved.
-- Model training, model validation, and final evaluation are not evidenced by
-  the inspected assets and remain empty.
+- TXT-to-CSV conversion and basic validation (`src/data/risk_to_csv.py`)
+- Weighted train/validation/test split creation and loading
+- Leakage audit and missing-value policy documentation
+- Two-stage preprocessing:
+  - interface-to-BCSC raw input mapping
+  - model-specific encoders (`onehot`, `ordinal_tree`)
+- Training configuration for four models
+- Weighted cross-validation utilities
+- Four trained and calibrated models
+- Modified Barlow Architecture experiment
+- One-time frozen Test evaluation artifacts
+- Final inference system (`SUPMT.py`, `SUPMT_CONFIG.py`)
+- Automated inference test tool (`test_SUPMT_inference.py`)
 
-## Structure
+Not implemented / not in repository:
 
-- `data/`: raw and interim datasets; processed and split stages are currently empty.
-- `notebooks/`: preserved research notebooks organized by stage.
-- `src/data/`: the existing TXT-to-CSV script.
-- `outputs/eda/`: existing tables and figures.
-- `docs/`: project state and evidence-based documentation.
-- `models/`, `tests/`, and future-stage output folders: currently empty unless
-  populated by existing assets.
+- Web/API service
+- Clinical deployment workflow
+- Prospective validation
+- External dataset validation
+- Real-time data ingestion
+
+## High-Level Architecture
+
+```mermaid
+flowchart LR
+    A[BCSC raw risk.txt] --> B[risk_to_csv.py]
+    B --> C[Filtered CSV]
+    C --> D[split_original.py / split_validation.py]
+    D --> E[train.csv / val.csv / test.csv]
+    E --> F[load_splits.py]
+    F --> G[fit_preprocessing.py]
+    G --> H[raw_input_mapping.json + encoder pipelines]
+    F --> I[src/training/train_models.py]
+    H --> I
+    I --> J[Calibrated model artifacts]
+    J --> K[SUPMT.py]
+    H --> K
+    L[Human patient input] --> K
+    K --> M[Four model probabilities + weighted average]
+```
+
+## Main Components
+
+| Component | Location | Purpose |
+|---|---|---|
+| Data conversion | `src/data/risk_to_csv.py` | Converts `risk.txt` to CSV with validation |
+| Split loader | `src/data/load_splits.py` | Defines `FEATURES`, `TARGET`, `WEIGHT`, loads splits |
+| Split creation | `src/preprocessing/split_original.py`, `split_validation.py` | Creates train/test and train/val splits |
+| Raw input mapping | `src/preprocessing/raw_input_mapping.py` | Maps interface codes and human input to BCSC codes |
+| Model preprocessing | `src/preprocessing/pipeline.py` | Builds, fits, transforms, saves/loads encoders |
+| Artifact fitting | `src/preprocessing/fit_preprocessing.py` | Fits preprocessing artifacts on train only |
+| Training config | `src/training/config.py` | Model specs, encoder mapping, CV/calibration policy |
+| Weighted CV | `src/training/cv.py` | Weighted folds, metrics, probability extraction |
+| Model pipelines | `src/training/pipeline.py` | MLP scaler+model pipeline and artifact helpers |
+| Model training | `src/training/train_models.py` | Training, tuning, calibration, validation evaluation |
+| Threshold analysis | `src/training/threshold_analysis.py` | Threshold sensitivity analysis |
+| Inference | `SUPMT.py`, `SUPMT_CONFIG.py` | Loads artifacts and predicts from human input |
+| Inference tests | `test_SUPMT_inference.py` | 60-case runtime test harness |
+
+## Repository Structure
+
+See [PROJECT_MAP.md](PROJECT_MAP.md) for the detailed repository tree and
+file-by-file map.
 
 ## Installation
 
-Dependency versions were not verified from project files. `requirements.txt` is
-therefore intentionally empty.
+Dependencies are listed in `requirements.txt` (currently empty by design). The
+observed environment is documented in `PROJECT_MAP.md` and `outputs/` reports.
 
-## Traceability
+No verified install steps are provided beyond running Python scripts from the
+repository root.
 
-See [docs/PROJECT_STATE_MATRIX.md](docs/PROJECT_STATE_MATRIX.md) for the full
-inventory, migration map, verified status, and pending work.
+## How to Run
+
+```bash
+python -m src.data.load_splits
+python -m src.preprocessing.fit_preprocessing
+python -m src.training.config --with-splits
+python -m src.training.cv --with-train
+python SUPMT.py
+python test_SUPMT_inference.py
+```
+
+## How to Run Tests
+
+```bash
+python -m unittest discover -s tests -v
+python test_SUPMT_inference.py
+```
+
+## Important Configuration
+
+- Feature order: `agegrp, bmi, agefirst, menopaus, surgmeno, hrt, nrelbc, density, brstproc, lastmamm`
+- Target: `cancer`
+- Weight: `count` (frequency weight, never a feature)
+- Random state: `42`
+- Inference weights: `SUPMT_CONFIG.py` (`MODEL_WEIGHTS`, all `1.0` by default)
+
+## Documentation Index
+
+- [PROJECT_MAP.md](PROJECT_MAP.md)
+- [ARCHITECTURE.md](ARCHITECTURE.md)
+- [DATA_DOCUMENTATION.md](DATA_DOCUMENTATION.md)
+- [MODELS.md](MODELS.md)
+- [INFERENCE.md](INFERENCE.md)
+- [TESTING.md](TESTING.md)
+- [EXPERIMENTS_AND_RESULTS.md](EXPERIMENTS_AND_RESULTS.md)
+- [DEVELOPMENT_GUIDE.md](DEVELOPMENT_GUIDE.md)
+- [LIMITATIONS_AND_ROADMAP.md](LIMITATIONS_AND_ROADMAP.md)
+- [DOCUMENTATION_AUDIT.md](DOCUMENTATION_AUDIT.md)
+
+## Known Limitations
+
+- Research/proof-of-concept scope; not clinically validated.
+- `surgmeno` and `hrt` code 9 combines Unknown and Not Applicable.
+- Test split was used only for one authorized final evaluation.
+- Dependency versions are not pinned in `requirements.txt`.
+- Some historical reports describe earlier project states.
+
+See [LIMITATIONS_AND_ROADMAP.md](LIMITATIONS_AND_ROADMAP.md).

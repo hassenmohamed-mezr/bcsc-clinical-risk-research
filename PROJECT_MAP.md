@@ -13,9 +13,9 @@ Research repository for the BCSC Risk Estimation dataset (aggregated screening-m
 ## 3. Folder Map
 - `data/01_raw/`: source `risk.txt` plus CSV copies (git-ignored); `02_interim/`: filtered CSVs; `03_processed/`: empty; `04_splits/`: `train_full.csv`, `train.csv`, `val.csv`, `test.csv`.
 - `notebooks/02_eda/`: EDA, feature-vs-cancer, PCA/t-SNE notebooks; `03_preprocessing/`: column-drop notebook; `01_data_discovery/`, `04_modeling/`, `05_final_evaluation/`: empty.
-- `src/data/`: `risk_to_csv.py` (TXT→CSV) and `load_splits.py` (split loader); `src/preprocessing/split_original.py`, `split_validation.py`, `raw_input_mapping.py` (interface→BCSC mapper), `pipeline.py` (encoder families), `fit_preprocessing.py` (train-only artifact fitting); `src/config.py` (central reproducibility settings); `src/training/config.py` (unified model/experiment configuration), `pipeline.py` (`SampleWeightPipeline` + joblib artifact helpers), `cv.py` (weighted folds, diagnostics, metrics, CV helper); `src/modeling|evaluation/`: empty.
+- `src/data/`: `risk_to_csv.py` (TXT→CSV) and `load_splits.py` (split loader); `src/preprocessing/split_original.py`, `split_validation.py`, `raw_input_mapping.py` (interface→BCSC mapper), `pipeline.py` (encoder families), `fit_preprocessing.py` (train-only artifact fitting); `src/config.py` (central reproducibility settings); `src/training/config.py` (unified model/experiment configuration), `pipeline.py` (`SampleWeightPipeline` + joblib artifact helpers), `cv.py` (weighted folds, diagnostics, metrics, CV helper); `src/modeling/`, `src/evaluation/`: empty.
 - `outputs/eda/{tables,figures}`: 14 CSVs + 18 images; `outputs/preprocessing/reports/`: reviews 01–14 (splits, leakage audit, missing-value policy, encoding analysis, preprocessing pipeline); `outputs/training/reports/`: reviews 01–07 (preprocessing implementation review, train/validation compatibility check, model-to-encoder selection, unified evaluation protocol, reproducibility policy, unified training configuration, final experiment decisions); `outputs/experiments/barlow_2006_modified/`: experiment code (`barlow_common.py`, `train_evaluate.py`, `test_evaluate.py`, `test_evaluate_all.py`), config, models, preprocessing, predictions, reports, logs, and one-time `test_evaluation/` artifacts.
-- `models/preprocessing/`: fitted mapping JSON, `onehot`/`ordinal_tree` joblib pipelines, metadata; `models/trained/`: four trained calibrated models (`logistic_regression`, `random_forest`, `gradient_boosting`, `mlp` + metadata JSON); `tests/`: `test_preprocessing.py`, `test_training_config.py`, `test_training_cv.py`, `test_barlow_modified.py`, `test_training_models.py`; `docs/{preprocessing,modeling,final_evaluation}`: empty.
+- `models/preprocessing/`: fitted mapping JSON, `onehot`/`ordinal_tree` joblib pipelines, metadata; `models/trained/`: four trained calibrated models (`logistic_regression`, `random_forest`, `gradient_boosting`, `mlp` + metadata JSON); `tests/`: `test_preprocessing.py`, `test_training_config.py`, `test_training_cv.py`, `test_barlow_modified.py`, `test_training_models.py`; root-level `SUPMT.py`, `SUPMT_CONFIG.py`, and `test_SUPMT_inference.py`; documentation files: `README.md`, `PROJECT_MAP.md`, `ARCHITECTURE.md`, `DATA_DOCUMENTATION.md`, `MODELS.md`, `INFERENCE.md`, `TESTING.md`, `EXPERIMENTS_AND_RESULTS.md`, `DEVELOPMENT_GUIDE.md`, `LIMITATIONS_AND_ROADMAP.md`, `DOCUMENTATION_AUDIT.md`; `docs/preprocessing/`, `docs/modeling/`, `docs/final_evaluation/`: empty.
 - `docs/`: state matrix, dataset notes, EDA notes; `references/`: placeholder notes only.
 
 ## 4. Entry Points and Run
@@ -27,6 +27,8 @@ Research repository for the BCSC Risk Estimation dataset (aggregated screening-m
 - `python -m src.training.config [--with-splits]` validates the unified training configuration without training; `--with-splits` also reloads Train/Validation and checks the frozen row/weight/rate references.
 - `python -m src.training.cv --with-train` loads Training only, builds the weighted 5-fold split, and prints per-fold rows, `sum(count)`, positive weight, weighted prevalence, and balance diagnostics; it fits no model and does not load Validation or Test.
 - `python -m src.preprocessing.fit_preprocessing` fits both encoder families on `train` only and writes `models/preprocessing/`.
+- `python SUPMT.py` loads the four calibrated models and preprocessing artifacts, then initializes the inference system.
+- `python test_SUPMT_inference.py` runs the 60-case inference runtime test and writes `SUPMT_TEST_REPORT.md` and `SUPMT_TEST_RESULTS.csv`.
 - `python -m unittest discover -s tests -v` runs the preprocessing, training-configuration, weighted-CV, model-training, and Modified-Barlow test suites (pytest is not installed).
 - `python outputs/experiments/barlow_2006_modified/train_evaluate.py` trains the two Modified Barlow models on frozen Train, evaluates on Validation, combines row-level predictions in original order, and writes `outputs/experiments/barlow_2006_modified/`.
 - `python outputs/experiments/barlow_2006_modified/test_evaluate.py` scores the frozen Barlow models on the frozen Test split (one-time, user-authorized).
@@ -54,6 +56,9 @@ Research repository for the BCSC Risk Estimation dataset (aggregated screening-m
 - `src/preprocessing/split_validation.py`: weighted stratified 85/15 train/validation split (seed 42).
 - `src/preprocessing/raw_input_mapping.py`: stage-A interface→BCSC mapping (`0` = Unknown → 9; agegrp has no Unknown), strict validation, JSON save/load.
 - `src/preprocessing/pipeline.py`: stage-B `ColumnTransformer` families `onehot` (43 cols) and `ordinal_tree` (26 cols), fixed `FEATURES` order, `handle_unknown="ignore"` for nominal codes, ordinal rank+Unknown flags, joblib save/load, `encode_user_inputs` inference path.
+- `SUPMT.py`: final inference entry point; loads artifacts once, validates human input, maps to BCSC, preprocesses per model, predicts, aggregates weighted average.
+- `SUPMT_CONFIG.py`: inference-only weights and artifact paths.
+- `test_SUPMT_inference.py`: 60-case runtime inference test harness.
 - `src/preprocessing/fit_preprocessing.py`: fits both encoder families on `train` only and saves reusable artifacts + metadata.
 - `tests/test_preprocessing.py`: 16 stdlib `unittest` tests covering mapping, feature order/dimensions, train-only fitting, Unknown/unseen handling, serialization, and inference parity.
 - `tests/test_training_config.py`: 14 tests covering configuration, MLP scaler+model pipeline and serialization, calibration factories, code 9, and Test rejection.
@@ -64,7 +69,7 @@ Research repository for the BCSC Risk Estimation dataset (aggregated screening-m
 - `notebooks/02_eda/EDA.ipynb`: weighted summaries, Wilson CI, unknown-rate table, training split.
 - `notebooks/02_eda/Full Feature vs Cancer.ipynb`: weighted contingency, chi-square, Cramér's V / bias-corrected V, outputs to `BCSC_Full_Feature_Analysis`.
 - `notebooks/02_eda/Visualization_2d&3d.ipynb`: PCA/t-SNE figures.
-- `docs/PROJECT_STATE_MATRIX.md`: authoritative inventory/status.
+- `docs/PROJECT_STATE_MATRIX.md`: historical migration inventory; not a current-state reference.
 - `outputs/preprocessing/reports/05_leakage_audit.md`: leakage/integrity audit of splits, preprocessing, and EDA (verdict: PASS WITH WARNINGS).
 - `outputs/preprocessing/reports/06_missing_inventory.md`: null counts and observed special codes for the 10 features on train+val (completed; no nulls, code 9 unverified).
 - `outputs/preprocessing/reports/07_weighted_missing_rates.md`: row-based and frequency-weighted missing rates for the 10 features (completed; all 0.00%, special codes excluded).
@@ -126,25 +131,73 @@ Combined suite: **62/62 passing**. `python -m src.training.config [--with-splits
 - `surgmeno`/`hrt` code 9 combines Unknown and Not Applicable in the source; the single-category policy is documented but the row-level distinction remains unverified.
 
 ## 11. Progress / Status
-- Completed: conversion, EDA, association analysis, PCA/t-SNE, original split preservation, weighted 85/15 validation split, `load_splits` module with self-check, the read-only leakage audit, the missing-value policy (reports 06–12), the feature-type/encoding analysis (report 13), and the two-stage preprocessing pipeline with tests and saved artifacts (report 14).
-- Missing-value phase: complete with pending items — the source combines Unknown and Not Applicable in `surgmeno`/`hrt` code 9, and the final decision keeps code 9 as one category (report 07); define the handling contract if true nulls ever appear.
-- Encoding/preprocessing phase: implemented with both `onehot` (43 cols) and `ordinal_tree` (26 cols) families, fitted on train only and saved under `models/preprocessing/`; the model-family/encoder mapping is now fixed (report 07).
-- Preprocessing tests: 16/16 passing; validation is transform-only and test remains unopened.
-- Preprocessing review (2026-11-04): saved artifacts load and reproduce the expected 43/26 columns; feature order, train-only categories, validation transform-only behaviour, and exclusions verified. Open findings: the `surgmeno`/`hrt` conditional Not Applicable recode was not implemented, and the final decision keeps code 9 as one category; direct BCSC-coded transforms do not strictly reject every undocumented category.
-- Train/validation compatibility check (2026-11-04): PASS for both `onehot` (43) and `ordinal_tree` (26); dtypes, domains, target, `count`, missingness, category coverage, and encoded dimensions all match. No unseen validation categories or all-zero encoded columns. Use `load_split()` because raw CSV order is not canonical.
-- Model-to-encoder selection (2026-11-04): Logistic Regression → `onehot` (no scaler), Random Forest → `ordinal_tree`, Gradient Boosting → `ordinal_tree` with scikit-learn `GradientBoostingClassifier`, MLP → `onehot` plus a `StandardScaler` inside the model pipeline. No model has been trained.
-- Evaluation protocol (2026-11-04): unified `count`-weighted ROC-AUC, PR-AUC, recall, specificity, precision, and Brier; positive class `cancer=1`, default threshold `0.5`, Validation-only comparison, and Test evaluated once after freezing. Weighted PR-AUC is the confirmed primary selection metric. Undefined metrics are reported as `N/A` with a reason. No model has been evaluated.
-- Reproducibility policy (2026-11-04): implemented `src/config.py` with `RANDOM_STATE=42` (matching the frozen split), `N_JOBS=1`, global Python/NumPy seeding, optional PyTorch seeding, and environment snapshots. Experiment-record layout and deterministic launch settings documented in report 05; Gradient Boosting fixed to scikit-learn and MLP early stopping disabled. No model trained.
-- Unified training configuration (2026-11-04): implemented `src/training/config.py` and report 06. All four models have a declared encoder, optional scaler, and initial parameter set; shared weighted metric, tuning, seed, split, and output policies are defined once. Read-only validation passes 14 checks (15 with live Train/Validation data); all four models resolve to the expected 43/26-column matrices. No model trained and Test untouched.
-- Final experiment decisions (2026-11-04): implemented `src/training/pipeline.py` (`SampleWeightPipeline`, joblib model artifact helpers) and `src/training/cv.py` (weighted folds, diagnostics, weighted metrics/scorers, `cross_validate_weighted`); added report 07 and expanded the tests. Training fold diagnostics: 5 folds of 30,429–30,430 rows with `sum(count)` 305,173–305,174 and weighted prevalence 0.488246–0.488574% (`material_imbalance=false`). Configuration checks pass 14/15 and the test suite passes 38/38. No model trained and Test untouched.
-- Open before modeling: run a real tuning search through `cross_validate_weighted` (weighted PR-AUC primary); fit and validate calibration on Training-only CV; produce the Validation comparison once models are frozen. Weighted stratification is a deterministic greedy approximation and should be monitored per run.
-- Model training (2026-11-04): four calibrated models were trained via `src/training/train_models.py` and saved to `models/trained/`; Validation metrics and predictions were produced under `outputs/training/`. `src/training/train_models.py` and `src/training/threshold_analysis.py` are the execution entry points.
-- Modified Barlow Architecture (2026-11-04): implemented in `outputs/experiments/barlow_2006_modified/`. Two unpenalized, reference-first LRs — Premenopausal (`menopaus==0`, 4 features) and Postmenopausal (`menopaus==1`, 9 features, `race`/`Hispanic` excluded) — trained on frozen Train with `count` as frequency weight, evaluated on Validation, combined in original row order, and compared with Unified LR. `menopaus==9` excluded throughout (Train 8,434 rows / 119,308 weight; Validation 1,565 / 17,138). Validation results: Premenopausal ROC-AUC 0.5589 / PR-AUC 0.0038 / Brier 0.002825 / BSS −0.0003; Postmenopausal 0.6075 / 0.0081 / 0.005466 / 0.0008; Combined 0.6232 / 0.0077 / 0.004807 / 0.0009; Unified LR 0.6242 / 0.0079 / 0.004855 / 0.0010. All models show recall 0 at threshold 0.5 (probabilities ≪ 0.5 at ≈0.49% prevalence).
-- Final Test evaluation (one-time, user-authorized, 2026-11-04): all six frozen models scored on the frozen Test split (100,195 rows / sum(count)=597,859 / weighted prevalence 0.480214%). Results: Gradient Boosting ROC-AUC 0.6445 / PR-AUC 0.0084 / Brier 0.004773 / BSS 0.0179; Logistic Regression 0.6398 / 0.0082 / 0.004773 / 0.0179; Barlow Combined (94,479 routed rows, prevalence 0.495161%) 0.6357 / 0.0083 / 0.004921 / 0.0163; Random Forest 0.6216 / 0.0077 / 0.004778 / 0.0168; Premenopausal 0.6218 / 0.0050 / 0.003031 / 0.0100; Postmenopausal 0.6170 / 0.0087 / 0.005575 / 0.0179; MLP 0.6128 / 0.0071 / 0.004785 / 0.0155. Recall 0 at 0.5 for all models. Details: `outputs/experiments/barlow_2006_modified/test_evaluation/all_models_test_metrics.csv` and `all_models_test_report.md`.
-- Self-check: train 152,149 rows / 1,525,868 weight / 0.488378% weighted cancer rate; val 28,316 rows / 269,271 weight / 0.488356%; test 100,195 rows / 597,859 weight / 0.480214% weighted cancer rate (evaluated once, by explicit user authorization, using frozen artifacts only).
-- Overlap check with `PROJECT_STATE_MATRIX.md` is not yet fully reconciled; `docs/` may still describe the pre-training state (preprocessing artifacts fitted, no models trained).
-- The `test.csv` was opened once per user request for a frozen, no-refit final evaluation; treat any future Test access as a new authorization, not a reopening of routine evaluation.
-- Not started: hyperparameter search beyond the frozen candidates, threshold tuning, and clinical deployment.
+
+### Current Status (as of repository state)
+
+- Data conversion, EDA, association analysis, PCA/t-SNE: completed.
+- Original split preservation and weighted validation split: completed.
+- Split loader (`src/data/load_splits.py`) with self-check: implemented.
+- Leakage audit: completed (PASS WITH WARNINGS).
+- Missing-value policy: completed with pending items (surgmeno/hrt combined code 9; true-null contract).
+- Preprocessing: implemented and fitted on train only; artifacts saved under `models/preprocessing/`.
+- Encoder families: `onehot` (43 columns) and `ordinal_tree` (26 columns).
+- Training: implemented and executed. Four calibrated models saved under `models/trained/`.
+- Validation evaluation: completed for all four models.
+- Modified Barlow Architecture: implemented and evaluated on Validation.
+- Final Test evaluation: completed once, by explicit authorization, on frozen Test split.
+- Inference system: implemented in `SUPMT.py` and `SUPMT_CONFIG.py`.
+- Inference runtime test: `test_SUPMT_inference.py` (60 cases) executed; 60 technical passes, 9 reference-range deviations.
+- Hyperparameter search beyond frozen candidates: not executed.
+- Threshold tuning: not executed.
+- Clinical deployment: not implemented.
+
+### Historical Milestones
+
+The following notes are retained as historical milestones. Some earlier statements such as "No model has been trained" described the pre-training state and are superseded by the current status above.
+
+- 2026-11-03/04: preprocessing reports 06-14 completed; preprocessing pipeline implemented.
+- 2026-11-04: training configuration, weighted CV, and final experiment decisions implemented.
+- 2026-11-04: four calibrated models trained and saved; validation metrics produced.
+- 2026-11-04: Modified Barlow Architecture implemented and evaluated on Validation.
+- 2026-11-04: one-time final Test evaluation performed for all six frozen models.
+- Self-check (current artifacts): train 152,149 rows / 1,525,868 weight / 0.488378% weighted cancer rate; val 28,316 rows / 269,271 weight / 0.488356%; test 100,195 rows / 597,859 weight / 0.480214%.
+
+### Current Model Results (Validation)
+
+- Gradient Boosting: PR-AUC 0.008291336041341874, ROC-AUC 0.631928005505103, Brier 0.004854590866248082
+- Logistic Regression: PR-AUC 0.00829032168635534, ROC-AUC 0.6308427726120697, Brier 0.00485460074139491
+- MLP: PR-AUC 0.0068142443535213985, ROC-AUC 0.5921166497226285, Brier 0.004862520383702512
+- Random Forest: PR-AUC 0.005411730104276897, ROC-AUC 0.5129516180738664, Brier 0.004872683445716941
+
+All models show recall 0 at threshold 0.5 on validation. These metrics are for research comparison, not clinical validity.
+
+### Modified Barlow Results (Validation)
+
+Separate architecture, not part of the four-model set:
+
+- Premenopausal: ROC-AUC 0.5589, PR-AUC 0.0038, Brier 0.002825, BSS -0.0003
+- Postmenopausal: ROC-AUC 0.6075, PR-AUC 0.0081, Brier 0.005466, BSS 0.0008
+- Combined: ROC-AUC 0.6232, PR-AUC 0.0077, Brier 0.004807, BSS 0.0009
+- Unified LR: ROC-AUC 0.6242, PR-AUC 0.0079, Brier 0.004855, BSS 0.0010
+
+### Test Evaluation (One-Time, Authorized)
+
+- Test split: 100,195 rows / sum(count)=597,859 / weighted prevalence 0.480214%
+- Gradient Boosting: ROC-AUC 0.6445, PR-AUC 0.0084, Brier 0.004773, BSS 0.0179
+- Logistic Regression: ROC-AUC 0.6398, PR-AUC 0.0082, Brier 0.004773, BSS 0.0179
+- Barlow Combined: ROC-AUC 0.6357, PR-AUC 0.0083, Brier 0.004921, BSS 0.0163
+- Random Forest: ROC-AUC 0.6216, PR-AUC 0.0077, Brier 0.004778, BSS 0.0168
+- Premenopausal: ROC-AUC 0.6218, PR-AUC 0.0050, Brier 0.003031, BSS 0.0100
+- Postmenopausal: ROC-AUC 0.6170, PR-AUC 0.0087, Brier 0.005575, BSS 0.0179
+- MLP: ROC-AUC 0.6128, PR-AUC 0.0071, Brier 0.004785, BSS 0.0155
+- Recall 0 at threshold 0.5 for all models.
+
+### Unresolved Items
+
+- surgmeno/hrt Unknown-vs-Not-Applicable remains combined as code 9.
+- Hyperparameter search beyond frozen candidates not executed.
+- Threshold tuning not executed.
+- Clinical deployment not implemented.
 
 ## 12. Leakage Audit (completed)
 - Scope: split files vs filtered input, original-split fidelity, validation origin, feature/record overlap, weight conservation, weighted feature distributions, `src/` and notebook fit/transform usage, and full-dataset EDA decisions.
