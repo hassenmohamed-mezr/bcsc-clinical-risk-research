@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BCSC Risk Estimation – System Architecture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f5f7fa; --surface:#ffffff; --ink:#14213d; --muted:#5b6578; --line:#d9dfe8;
+  --accent:#0b7a75; --accent-soft:#e0f2f1; --code:#eef1f6;
+  --font:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e1523; --surface:#151e30; --ink:#e6ebf5; --muted:#9aa6bd; --line:#26324a;
+    --accent:#4fd1c5; --accent-soft:#12303a; --code:#1b2740; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0e1523; --surface:#151e30; --ink:#e6ebf5; --muted:#9aa6bd; --line:#26324a;
+  --accent:#4fd1c5; --accent-soft:#12303a; --code:#1b2740; color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:24px}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 var(--font)}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:4px}
+.layout{display:grid;grid-template-columns:260px minmax(0,1fr);max-width:1280px;margin:0 auto}
+nav{position:sticky;top:0;align-self:start;height:100vh;padding:32px 24px;border-right:1px solid var(--line);overflow:auto}
+nav .brand{font-weight:600;font-size:15px;line-height:1.35;margin:0 0 24px}
+nav .brand span{display:block;color:var(--muted);font-weight:400;font-size:13px;margin-top:4px}
+nav ol{list-style:none;margin:0;padding:0}
+nav li a{display:block;padding:7px 12px;margin:2px 0;border-left:2px solid transparent;color:var(--muted);text-decoration:none;font-size:14px}
+nav li a:hover,nav li a.active{color:var(--ink);border-left-color:var(--accent);background:var(--accent-soft)}
+button.theme{margin-top:24px;font:inherit;font-size:13px;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:7px 12px;cursor:pointer}
+button.theme:hover{border-color:var(--accent)}
+main{padding:48px clamp(20px,4vw,56px) 64px;min-width:0}
+header.doc h1{font-size:clamp(28px,4vw,40px);line-height:1.15;margin:0 0 12px;letter-spacing:-.01em}
+header.doc p{max-width:68ch;color:var(--muted);margin:0 0 20px}
+.meta{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font:500 12.5px var(--mono);padding:4px 10px;border:1px solid var(--line);border-radius:999px;background:var(--surface);color:var(--muted)}
+section{margin-top:56px}
+section h2{font-size:24px;margin:0 0 6px;letter-spacing:-.005em}
+section>p{max-width:72ch;color:var(--muted);margin:0 0 16px}
+.diagram{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:20px;overflow-x:auto}
+.diagram svg{display:block;margin:0 auto;max-width:none;height:auto}
+.diagram pre.src{margin:0;font:13px/1.5 var(--mono);white-space:pre-wrap;color:var(--muted)}
+table{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:14.5px}
+.table-wrap{overflow-x:auto}
+th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:var(--code);font-weight:600;font-size:13.5px}
+tr:last-child td{border-bottom:0}
+code{font:13px var(--mono);background:var(--code);padding:2px 6px;border-radius:4px}
+.docs{display:flex;flex-wrap:wrap;gap:8px}
+footer{margin-top:64px;padding-top:20px;border-top:1px solid var(--line);color:var(--muted);font-size:13.5px}
+@media (max-width:860px){
+  .layout{display:block}
+  nav{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line);padding:20px}
+  nav ol{display:flex;flex-wrap:wrap;gap:4px}
+  nav li a{border-left:0;border-radius:6px}
+}
+@media print{
+  nav,button.theme{display:none}
+  .layout{display:block}
+  body{background:#fff;color:#000}
+  .diagram{break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<div class="layout">
+  <nav aria-label="Sections">
+    <p class="brand">BCSC Risk Estimation<span>System architecture</span></p>
+    <ol>
+      <li><a href="#overview">High-level architecture</a></li>
+      <li><a href="#training">Training</a></li>
+      <li><a href="#inference">Inference</a></li>
+      <li><a href="#dependencies">Component dependencies</a></li>
+      <li><a href="#components">Key components</a></li>
+      <li><a href="#references">Documentation</a></li>
+    </ol>
+    <button class="theme" id="themeBtn" type="button">Switch theme</button>
+  </nav>
+
+  <main>
+    <header class="doc">
+      <h1>BCSC Risk Estimation: System Architecture</h1>
+      <p>How raw BCSC risk data becomes calibrated one-year breast cancer risk probabilities: from data conversion and preprocessing, through model training, to the inference entry point used by an AI agent.</p>
+      <div class="meta">
+        <span class="chip">Input: risk.txt</span>
+        <span class="chip">Selection: weighted PR-AUC</span>
+        <span class="chip">Calibration: sigmoid</span>
+        <span class="chip">Output: 4 probabilities + weighted average</span>
+      </div>
+    </header>
+
+    <section id="overview">
+      <h2>1. High-level system architecture</h2>
+      <p>The end-to-end pipeline. Data flows from the raw file to split datasets, fitted preprocessing artifacts and trained models, which are combined at inference time.</p>
+      <div class="diagram"><pre class="src mermaid-src">flowchart TB
+    Raw["BCSC raw<br/>risk.txt"] --> Convert["src/data/risk_to_csv.py"]
+    Convert --> Filtered["data/02_interim/<br/>risk_filtered.csv"]
+    Filtered --> Split["src/preprocessing/<br/>split_original.py / split_validation.py"]
+    Split --> Splits["data/04_splits/<br/>train.csv, val.csv, test.csv"]
+    Splits --> Loader["src/data/load_splits.py"]
+    Loader --> Fit["src/preprocessing/<br/>fit_preprocessing.py"]
+    Fit --> Artifacts["raw_input_mapping.json<br/>+ encoder pipelines"]
+    Loader --> Train["src/training/train_models.py"]
+    Artifacts --> Train
+    Train --> Models["Calibrated<br/>model artifacts"]
+    Models --> Infer["SUPMT.py"]
+    Artifacts --> Infer
+    Human["Human patient input"] --> Infer
+    Infer --> Output["Four probabilities<br/>+ weighted average"]</pre></div>
+    </section>
+
+    <section id="training">
+      <h2>2. Training architecture</h2>
+      <p>Each model gets its own encoder. Candidates are compared with weighted 5-fold cross-validation and selected by weighted PR-AUC, then refit on the full training set and calibrated.</p>
+      <div class="diagram"><pre class="src mermaid-src">flowchart TB
+    X["Training X"] --> Enc["Per-model<br/>encoder"]
+    Enc --> Z["Encoded matrix"]
+    Z --> CV["Weighted<br/>5-fold CV"]
+    CV --> Select["Select by<br/>weighted PR-AUC"]
+    Select --> Fit["Final fit on<br/>full train"]
+    Fit --> Cal["Sigmoid calibration<br/>ensemble=False"]
+    Cal --> Save["Joblib<br/>model artifact"]</pre></div>
+    </section>
+
+    <section id="inference">
+      <h2>3. Inference architecture</h2>
+      <p>A patient record is normalized, mapped to BCSC coding, encoded by each model's fitted transformer, scored, and aggregated using the configured model weights.</p>
+      <div class="diagram"><pre class="src mermaid-src">flowchart TB
+    P["Human patient<br/>dict"] --> Norm["Normalize missing<br/>fields to None"]
+    Norm --> HumanMap["human_to_interface_record<br/>(raw_input_mapping.py)"]
+    HumanMap --> IF["Interface-coded<br/>DataFrame"]
+    IF --> Mapper["RawInputMapper<br/>.transform_frame"]
+    Mapper --> BCSC["BCSC-coded<br/>DataFrame"]
+    BCSC --> Pipe["Per-model fitted<br/>ColumnTransformer"]
+    Pipe --> Encoded["Encoded matrix"]
+    Encoded --> Model["Calibrated model<br/>predict_proba"]
+    Model --> Prob["Positive-class<br/>probability"]
+    Prob --> Agg["Weighted average<br/>(SUPMT_CONFIG.MODEL_WEIGHTS)"]
+    Agg --> Out["Printed<br/>probabilities"]</pre></div>
+    </section>
+
+    <section id="dependencies">
+      <h2>4. Component dependencies</h2>
+      <p>Module-level dependencies between data loading, preprocessing, training and the inference entry point.</p>
+      <div class="diagram"><pre class="src mermaid-src">flowchart TD
+    LS["src/data/load_splits.py"] --> PP["src/preprocessing/pipeline.py"]
+    RM["src/preprocessing/<br/>raw_input_mapping.py"] --> PP
+    PP --> FP["src/preprocessing/<br/>fit_preprocessing.py"]
+    LS --> TC["src/training/config.py"]
+    PP --> TC
+    TC --> TM["src/training/train_models.py"]
+    CV["src/training/cv.py"] --> TM
+    TP["src/training/pipeline.py"] --> TM
+    TM --> Models["models/trained/<br/>*_calibrated.joblib"]
+    FP --> Pre["models/preprocessing/*"]
+    Models --> SUPMT["SUPMT.py"]
+    Pre --> SUPMT
+    RM --> SUPMT</pre></div>
+    </section>
+
+    <section id="components">
+      <h2>5. Key components</h2>
+      <p>Where to look for each responsibility.</p>
+      <div class="table-wrap">
+      <table>
+        <thead><tr><th>Stage</th><th>Module</th><th>Responsibility</th></tr></thead>
+        <tbody>
+          <tr><td>Data</td><td><code>src/data/risk_to_csv.py</code></td><td>Converts raw <code>risk.txt</code> to CSV and filters it.</td></tr>
+          <tr><td>Data</td><td><code>src/data/load_splits.py</code></td><td>Loads the train, validation and test splits.</td></tr>
+          <tr><td>Preprocessing</td><td><code>src/preprocessing/fit_preprocessing.py</code></td><td>Fits per-model encoders and saves the mapping artifacts.</td></tr>
+          <tr><td>Preprocessing</td><td><code>src/preprocessing/raw_input_mapping.py</code></td><td>Maps human and interface input to BCSC coding.</td></tr>
+          <tr><td>Training</td><td><code>src/training/train_models.py</code></td><td>Runs weighted CV, selection, final fit and sigmoid calibration.</td></tr>
+          <tr><td>Inference</td><td><code>SUPMT.py</code></td><td>Scores a patient with each model and returns the weighted average.</td></tr>
+        </tbody>
+      </table>
+      </div>
+    </section>
+
+    <section id="references">
+      <h2>6. Documentation</h2>
+      <p>The full verified documentation lives alongside the code.</p>
+      <div class="docs">
+        <span class="chip">ARCHITECTURE.md</span>
+        <span class="chip">PROJECT_MAP.md</span>
+        <span class="chip">MODELS.md</span>
+        <span class="chip">INFERENCE.md</span>
+        <span class="chip">DATA_DOCUMENTATION.md</span>
+      </div>
+    </section>
+
+    <footer>Diagrams are rendered in the browser with Mermaid, so an internet connection is needed. Without it, the diagram source is shown instead.</footer>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+<script>
+(function () {
+  var root = document.documentElement;
+  var btn = document.getElementById('themeBtn');
+  var sources = Array.prototype.map.call(document.querySelectorAll('.mermaid-src'), function (el) {
+    return { host: el.parentElement, code: el.textContent };
+  });
+
+  function isDark() {
+    var t = root.getAttribute('data-theme');
+    if (t) return t === 'dark';
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+
+  function render() {
+    if (!window.mermaid) return;
+    var dark = isDark();
+    mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: 'strict',
+      theme: 'base',
+      flowchart: { curve: 'basis', htmlLabels: true, padding: 14 },
+      themeVariables: dark
+        ? { fontFamily: 'IBM Plex Sans, Arial, sans-serif', primaryColor: '#12303a', primaryTextColor: '#e6ebf5', primaryBorderColor: '#4fd1c5', lineColor: '#9aa6bd', background: '#151e30' }
+        : { fontFamily: 'IBM Plex Sans, Arial, sans-serif', primaryColor: '#e0f2f1', primaryTextColor: '#14213d', primaryBorderColor: '#0b7a75', lineColor: '#5b6578', background: '#ffffff' }
+    });
+    sources.forEach(function (s, i) {
+      mermaid.render('diagram-' + i + '-' + Date.now(), s.code).then(function (out) {
+        s.host.innerHTML = out.svg;
+      }).catch(function () { /* keep the source text visible */ });
+    });
+  }
+
+  function setTheme(t) {
+    root.setAttribute('data-theme', t);
+    try { localStorage.setItem('arch-theme', t); } catch (e) {}
+    render();
+  }
+
+  try {
+    var saved = localStorage.getItem('arch-theme');
+    if (saved) root.setAttribute('data-theme', saved);
+  } catch (e) {}
+
+  btn.addEventListener('click', function () { setTheme(isDark() ? 'light' : 'dark'); });
+
+  var links = document.querySelectorAll('nav li a');
+  var secs = Array.prototype.map.call(links, function (a) { return document.querySelector(a.getAttribute('href')); });
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) {
+          links.forEach(function (a) { a.classList.toggle('active', a.getAttribute('href') === '#' + e.target.id); });
+        }
+      });
+    }, { rootMargin: '-20% 0px -70% 0px' });
+    secs.forEach(function (s) { if (s) io.observe(s); });
+  }
+
+  if (window.mermaid) render();
+  else window.addEventListener('load', render);
+})();
+</script>
+</body>
+</html>
