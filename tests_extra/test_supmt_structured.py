@@ -17,8 +17,6 @@ import SUPMT
 import SUPMT_structured
 
 CASES_PATH = ROOT / "BCSC_SUPMT_60_test_cases.json"
-if not CASES_PATH.is_file():
-    CASES_PATH = Path(r"C:\Users\marwa\Downloads\BCSC_SUPMT_60_test_cases.json")
 
 
 def load_accepted():
@@ -28,6 +26,9 @@ def load_accepted():
 
 
 def test_structured_equals_predict_patient():
+    import unittest
+    if not CASES_PATH.is_file():
+        raise unittest.SkipTest("BCSC_SUPMT_60_test_cases.json not found in repository")
     for case in load_accepted():
         with contextlib.redirect_stdout(io.StringIO()):
             base = SUPMT.predict_patient(case["input"])

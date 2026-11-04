@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "created_utc": "2026-11-04T20:58:15.746964+00:00",
+  "function": "log-normal CDF of LR probability",
+  "source_csv": "outputs/training/predictions/val_predictions_all.csv",
+  "source_sha256": "7d4c20c6e766c4cc8c62544ca99a841c9f34e4a733060729951577bed3081354",
+  "population": "validation split, out-of-sample predictions, count-weighted",
+  "n_rows": 28316,
+  "weight_sum": 269271.0,
+  "weighted_prevalence": 0.004883555971493403,
+  "weighted_median_probability": 0.004449594181718662,
+  "logistic_regression": {
+    "mu": -5.4080596412098485,
+    "sigma": 0.4751694327986758
+  },
+  "gradient_boosting": {
+    "mu": -5.4164485752174585,
+    "sigma": 0.4924952163010074
+  },
+  "gb_gap_threshold": 17.830800262530364
+}

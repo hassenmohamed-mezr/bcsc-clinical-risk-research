@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextlib
+import functools
 import io
 import math
 from typing import Any
@@ -12,6 +13,7 @@ from src.data.load_splits import load_split
 import SUPMT
 
 
+@functools.lru_cache(maxsize=1)
 def _train_baseline_prevalence() -> float:
     X, y, w = load_split("train")
     y_arr = y.to_numpy(dtype=float) if hasattr(y, "to_numpy") else __import__("numpy").asarray(y, dtype=float)
@@ -33,8 +35,10 @@ def predict_patient_structured(patient: Any) -> dict[str, Any]:
     weights_used = dict(SUPMT.get_system()["weights"])
     baseline_prevalence = _train_baseline_prevalence()
     relative_risk = weighted_average / baseline_prevalence if baseline_prevalence > 0 else float("inf")
-    spread_min = min(probs.values())
-    spread_max = max(probs.values())
+    weights = SUPMT.get_system()["weights"]
+    active_probs = [probs[k] for k in probs if weights.get(k, 0) > 0]
+    spread_min = min(active_probs)
+    spread_max = max(active_probs)
 
     warnings_list = []
     if (spread_max - spread_min) > 0.01:
