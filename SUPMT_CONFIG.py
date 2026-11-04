@@ -17,8 +17,8 @@ PREPROCESSING_DIR = PROJECT_ROOT / "models" / "preprocessing"
 MODEL_WEIGHTS = {
     "logistic_regression": 1.0,
     "gradient_boosting": 1.0,
-    "mlp": 1.0,
-    "random_forest": 1.0,
+    "mlp": 0.0,
+    "random_forest": 0.0,
 }
 
 # Expected library version recorded in the saved training metadata.
