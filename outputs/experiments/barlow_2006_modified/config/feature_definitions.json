@@ -1,0 +1,29 @@
+{
+  "premenopausal": [
+    "agegrp",
+    "brstproc",
+    "nrelbc",
+    "density"
+  ],
+  "postmenopausal": [
+    "agegrp",
+    "bmi",
+    "agefirst",
+    "brstproc",
+    "nrelbc",
+    "hrt",
+    "surgmeno",
+    "lastmamm",
+    "density"
+  ],
+  "routing_column": "menopaus",
+  "forbidden_features": [
+    "race",
+    "Hispanic",
+    "menopaus",
+    "count",
+    "cancer",
+    "training",
+    "invasive"
+  ]
+}

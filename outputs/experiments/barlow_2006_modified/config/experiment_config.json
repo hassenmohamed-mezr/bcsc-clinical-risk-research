@@ -1,0 +1,192 @@
+{
+  "experiment": "Modified Barlow Architecture (not a reproduction of Barlow et al. 2006)",
+  "exclusions": {
+    "race": "excluded entirely \u2014 not recovered, not used",
+    "Hispanic": "excluded entirely \u2014 not recovered, not used",
+    "menopaus": "routing variable only, never a feature",
+    "invasive": "never a feature",
+    "training": "never a feature",
+    "menopaus_unknown_rule": "menopa == 9 excluded from both models and combined evaluation"
+  },
+  "target": "cancer",
+  "positive_class": 1,
+  "weight": "count",
+  "weight_role": "frequency weight (sample_weight); never a feature",
+  "splits": {
+    "train": "data/04_splits/train.csv",
+    "val": "data/04_splits/val.csv",
+    "test": "never accessed"
+  },
+  "subgroups": [
+    {
+      "key": "premenopausal",
+      "menopaus": 0,
+      "features": [
+        "agegrp",
+        "brstproc",
+        "nrelbc",
+        "density"
+      ],
+      "reference_categories": {
+        "agegrp": 1,
+        "brstproc": 0,
+        "nrelbc": 0,
+        "density": 1
+      },
+      "category_orders": {
+        "agegrp": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10
+        ],
+        "brstproc": [
+          0,
+          1,
+          9
+        ],
+        "nrelbc": [
+          0,
+          1,
+          2,
+          9
+        ],
+        "density": [
+          1,
+          2,
+          3,
+          4,
+          9
+        ]
+      }
+    },
+    {
+      "key": "postmenopausal",
+      "menopaus": 1,
+      "features": [
+        "agegrp",
+        "bmi",
+        "agefirst",
+        "brstproc",
+        "nrelbc",
+        "hrt",
+        "surgmeno",
+        "lastmamm",
+        "density"
+      ],
+      "reference_categories": {
+        "agegrp": 1,
+        "bmi": 1,
+        "agefirst": 0,
+        "brstproc": 0,
+        "nrelbc": 0,
+        "hrt": 0,
+        "surgmeno": 0,
+        "lastmamm": 0,
+        "density": 1
+      },
+      "category_orders": {
+        "agegrp": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10
+        ],
+        "bmi": [
+          1,
+          2,
+          3,
+          4,
+          9
+        ],
+        "agefirst": [
+          0,
+          1,
+          2,
+          9
+        ],
+        "brstproc": [
+          0,
+          1,
+          9
+        ],
+        "nrelbc": [
+          0,
+          1,
+          2,
+          9
+        ],
+        "hrt": [
+          0,
+          1,
+          9
+        ],
+        "surgmeno": [
+          0,
+          1,
+          9
+        ],
+        "lastmamm": [
+          0,
+          1,
+          9
+        ],
+        "density": [
+          1,
+          2,
+          3,
+          4,
+          9
+        ]
+      }
+    }
+  ],
+  "model": {
+    "estimator": "sklearn.linear_model.LogisticRegression",
+    "params": {
+      "penalty": "None",
+      "solver": "lbfgs",
+      "max_iter": 1000,
+      "random_state": 42,
+      "class_weight": "None"
+    },
+    "penalty": "None (unpenalized, as SAS PROC LOGISTIC)",
+    "encoding": "OneHotEncoder drop='first' (SAS param=ref / ref=first equivalent)",
+    "class_weight": null,
+    "no_smote_no_oversampling": true
+  },
+  "threshold": 0.5,
+  "environment": {
+    "python": "3.15.0",
+    "platform": "Windows-11-10.0.26300-SP0",
+    "numpy": "2.5.4",
+    "pandas": "3.1.0",
+    "scipy": "1.18.1",
+    "scikit_learn": "1.9.1",
+    "joblib": "1.6.0",
+    "random_state": 42,
+    "n_jobs": 1,
+    "default_threshold": 0.5,
+    "thread_environment": {
+      "PYTHONHASHSEED": null,
+      "OMP_NUM_THREADS": null,
+      "MKL_NUM_THREADS": null,
+      "OPENBLAS_NUM_THREADS": null,
+      "NUMEXPR_NUM_THREADS": null,
+      "CUBLAS_WORKSPACE_CONFIG": null
+    },
+    "torch": null
+  }
+}

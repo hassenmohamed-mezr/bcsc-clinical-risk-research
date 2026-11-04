@@ -1,0 +1,74 @@
+{
+  "category_orders": {
+    "agegrp": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10
+    ],
+    "bmi": [
+      1,
+      2,
+      3,
+      4,
+      9
+    ],
+    "agefirst": [
+      0,
+      1,
+      2,
+      9
+    ],
+    "brstproc": [
+      0,
+      1,
+      9
+    ],
+    "nrelbc": [
+      0,
+      1,
+      2,
+      9
+    ],
+    "density": [
+      1,
+      2,
+      3,
+      4,
+      9
+    ],
+    "hrt": [
+      0,
+      1,
+      9
+    ],
+    "surgmeno": [
+      0,
+      1,
+      9
+    ],
+    "lastmamm": [
+      0,
+      1,
+      9
+    ]
+  },
+  "reference_categories": {
+    "agegrp": 1,
+    "bmi": 1,
+    "agefirst": 0,
+    "brstproc": 0,
+    "nrelbc": 0,
+    "density": 1,
+    "hrt": 0,
+    "surgmeno": 0,
+    "lastmamm": 0
+  },
+  "encoding": "BCSC codebook numeric ascending; drop first (reference)"
+}

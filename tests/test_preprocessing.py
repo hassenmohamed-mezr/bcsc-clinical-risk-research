@@ -38,6 +38,9 @@ from src.preprocessing.raw_input_mapping import (
     UNKNOWN_INPUT,
     InputMappingError,
     RawInputMapper,
+    human_to_interface_record,
+    human_to_interface_frame,
+    encode_human_inputs,
 )
 
 EXPECTED_ONEHOT_DIMS = 43
@@ -368,6 +371,342 @@ class TestModelPreprocessing(unittest.TestCase):
         self.assertFalse(hasattr(fresh, "transformers_"))
         with self.assertRaises(ValueError):
             build_pipeline("magic")
+
+
+class TestHumanInputMapping(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        from src.preprocessing.pipeline import load_pipeline
+
+        cls.mapper = RawInputMapper()
+        cls.onehot = load_pipeline("models/preprocessing/onehot_pipeline.joblib")
+        cls.ordinal = load_pipeline("models/preprocessing/ordinal_tree_pipeline.joblib")
+
+    def test_example_1_premenopausal(self) -> None:
+        patient = {
+            "age": 42,
+            "bmi": 27.5,
+            "has_given_birth": True,
+            "age_at_first_birth": 26,
+            "is_postmenopausal": False,
+            "menopause_type": None,
+            "currently_on_hrt": None,
+            "first_degree_relatives_with_breast_cancer": 1,
+            "breast_density": "heterogeneously dense",
+            "prior_breast_procedure": False,
+            "last_mammogram_result": "negative",
+        }
+        self.assertEqual(
+            human_to_interface_record(patient),
+            {
+                "agegrp": 2,
+                "bmi": 2,
+                "agefirst": 1,
+                "menopaus": 1,
+                "surgmeno": 0,
+                "hrt": 0,
+                "nrelbc": 2,
+                "density": 3,
+                "brstproc": 1,
+                "lastmamm": 1,
+            },
+        )
+
+    def test_example_2_postmenopausal(self) -> None:
+        patient = {
+            "age": 61,
+            "bmi": 32.1,
+            "has_given_birth": True,
+            "age_at_first_birth": 31,
+            "is_postmenopausal": True,
+            "menopause_type": "natural",
+            "currently_on_hrt": False,
+            "first_degree_relatives_with_breast_cancer": "2+",
+            "breast_density": "extremely dense",
+            "prior_breast_procedure": True,
+            "last_mammogram_result": "false positive",
+        }
+        self.assertEqual(
+            human_to_interface_record(patient),
+            {
+                "agegrp": 6,
+                "bmi": 3,
+                "agefirst": 2,
+                "menopaus": 2,
+                "surgmeno": 1,
+                "hrt": 1,
+                "nrelbc": 3,
+                "density": 4,
+                "brstproc": 2,
+                "lastmamm": 2,
+            },
+        )
+
+    def test_example_3_uncertain(self) -> None:
+        patient = {
+            "age": 53,
+            "bmi": 23,
+            "has_given_birth": False,
+            "age_at_first_birth": None,
+            "is_postmenopausal": None,
+            "menopause_type": None,
+            "currently_on_hrt": None,
+            "first_degree_relatives_with_breast_cancer": 0,
+            "breast_density": None,
+            "prior_breast_procedure": False,
+            "last_mammogram_result": "negative",
+        }
+        self.assertEqual(
+            human_to_interface_record(patient),
+            {
+                "agegrp": 4,
+                "bmi": 1,
+                "agefirst": 3,
+                "menopaus": 0,
+                "surgmeno": 0,
+                "hrt": 0,
+                "nrelbc": 1,
+                "density": 0,
+                "brstproc": 1,
+                "lastmamm": 1,
+            },
+        )
+
+    def test_age_boundaries(self) -> None:
+        base = {
+            "age": 42,
+            "bmi": 23.0,
+            "has_given_birth": False,
+            "age_at_first_birth": None,
+            "is_postmenopausal": None,
+            "menopause_type": None,
+            "currently_on_hrt": None,
+            "first_degree_relatives_with_breast_cancer": 0,
+            "breast_density": None,
+            "prior_breast_procedure": False,
+            "last_mammogram_result": "negative",
+        }
+        for age, expected in ((35, 1), (39, 1), (40, 2), (84, 10)):
+            patient = dict(base)
+            patient["age"] = age
+            self.assertEqual(human_to_interface_record(patient)["agegrp"], expected)
+        for bad_age in (34, 85, True, "42"):
+            patient = dict(base)
+            patient["age"] = bad_age
+            with self.assertRaises(InputMappingError):
+                human_to_interface_record(patient)
+
+    def test_bmi_boundaries_and_unknown(self) -> None:
+        base = {
+            "age": 42,
+            "bmi": 23.0,
+            "has_given_birth": False,
+            "age_at_first_birth": None,
+            "is_postmenopausal": None,
+            "menopause_type": None,
+            "currently_on_hrt": None,
+            "first_degree_relatives_with_breast_cancer": 0,
+            "breast_density": None,
+            "prior_breast_procedure": False,
+            "last_mammogram_result": "negative",
+        }
+        cases = ((10, 1), (24.99, 1), (25, 2), (29.99, 2), (30, 3), (34.99, 3), (35, 4), (40, 4))
+        for bmi, expected in cases:
+            patient = dict(base)
+            patient["bmi"] = bmi
+            self.assertEqual(human_to_interface_record(patient)["bmi"], expected)
+        patient = dict(base)
+        patient["bmi"] = None
+        self.assertEqual(human_to_interface_record(patient)["bmi"], 0)
+        for bad_bmi in (9.99, True, "23", float("nan")):
+            patient = dict(base)
+            patient["bmi"] = bad_bmi
+            with self.assertRaises(InputMappingError):
+                human_to_interface_record(patient)
+
+    def test_nulliparous_and_conflict(self) -> None:
+        patient = {
+            "age": 42,
+            "bmi": 23.0,
+            "has_given_birth": False,
+            "age_at_first_birth": None,
+            "is_postmenopausal": None,
+            "menopause_type": None,
+            "currently_on_hrt": None,
+            "first_degree_relatives_with_breast_cancer": 0,
+            "breast_density": None,
+            "prior_breast_procedure": False,
+            "last_mammogram_result": "negative",
+        }
+        self.assertEqual(human_to_interface_record(patient)["agefirst"], 3)
+        conflict = dict(patient)
+        conflict["age_at_first_birth"] = 25
+        with self.assertRaises(InputMappingError):
+            human_to_interface_record(conflict)
+
+    def test_unknown_fields(self) -> None:
+        patient = {
+            "age": 42,
+            "bmi": None,
+            "has_given_birth": True,
+            "age_at_first_birth": None,
+            "is_postmenopausal": None,
+            "menopause_type": None,
+            "currently_on_hrt": None,
+            "first_degree_relatives_with_breast_cancer": None,
+            "breast_density": None,
+            "prior_breast_procedure": None,
+            "last_mammogram_result": None,
+        }
+        record = human_to_interface_record(patient)
+        self.assertEqual(record["bmi"], 0)
+        self.assertEqual(record["density"], 0)
+        self.assertEqual(record["menopaus"], 0)
+        self.assertEqual(record["nrelbc"], 0)
+        self.assertEqual(record["brstproc"], 0)
+        self.assertEqual(record["lastmamm"], 0)
+
+    def test_invalid_values(self) -> None:
+        base = {
+            "age": 42,
+            "bmi": 23.0,
+            "has_given_birth": True,
+            "age_at_first_birth": 26,
+            "is_postmenopausal": True,
+            "menopause_type": "natural",
+            "currently_on_hrt": False,
+            "first_degree_relatives_with_breast_cancer": 1,
+            "breast_density": "heterogeneously dense",
+            "prior_breast_procedure": False,
+            "last_mammogram_result": "negative",
+        }
+        invalid_cases = [
+            ("breast_density", "unknown density"),
+            ("last_mammogram_result", "positive"),
+            ("first_degree_relatives_with_breast_cancer", "2"),
+            ("first_degree_relatives_with_breast_cancer", -1),
+            ("menopause_type", "induced"),
+            ("has_given_birth", 1),
+            ("is_postmenopausal", "False"),
+            ("prior_breast_procedure", 0),
+        ]
+        for field, value in invalid_cases:
+            patient = dict(base)
+            patient[field] = value
+            with self.assertRaises(InputMappingError):
+                human_to_interface_record(patient)
+
+        # Conditional validation.
+        pre_with_type = dict(base)
+        pre_with_type["is_postmenopausal"] = False
+        with self.assertRaises(InputMappingError):
+            human_to_interface_record(pre_with_type)
+
+        # Exact fields.
+        missing = dict(base)
+        del missing["age"]
+        with self.assertRaises(InputMappingError):
+            human_to_interface_record(missing)
+        extra = dict(base)
+        extra["count"] = 1
+        with self.assertRaises(InputMappingError):
+            human_to_interface_record(extra)
+
+    def test_frame_multiple_patients(self) -> None:
+        patients = [
+            {
+                "age": 42,
+                "bmi": 27.5,
+                "has_given_birth": True,
+                "age_at_first_birth": 26,
+                "is_postmenopausal": False,
+                "menopause_type": None,
+                "currently_on_hrt": None,
+                "first_degree_relatives_with_breast_cancer": 1,
+                "breast_density": "heterogeneously dense",
+                "prior_breast_procedure": False,
+                "last_mammogram_result": "negative",
+            },
+            {
+                "age": 61,
+                "bmi": 32.1,
+                "has_given_birth": True,
+                "age_at_first_birth": 31,
+                "is_postmenopausal": True,
+                "menopause_type": "natural",
+                "currently_on_hrt": False,
+                "first_degree_relatives_with_breast_cancer": "2+",
+                "breast_density": "extremely dense",
+                "prior_breast_procedure": True,
+                "last_mammogram_result": "false positive",
+            },
+        ]
+        frame = human_to_interface_frame(patients)
+        self.assertEqual(list(frame.columns), FEATURES)
+        self.assertEqual(len(frame), 2)
+        single = human_to_interface_frame(patients[0])
+        self.assertEqual(len(single), 1)
+
+    def test_encode_human_inputs_onehot(self) -> None:
+        patients = [
+            {
+                "age": 42,
+                "bmi": 27.5,
+                "has_given_birth": True,
+                "age_at_first_birth": 26,
+                "is_postmenopausal": False,
+                "menopause_type": None,
+                "currently_on_hrt": None,
+                "first_degree_relatives_with_breast_cancer": 1,
+                "breast_density": "heterogeneously dense",
+                "prior_breast_procedure": False,
+                "last_mammogram_result": "negative",
+            }
+        ]
+        encoded = encode_human_inputs(patients, self.mapper, self.onehot)
+        self.assertEqual(encoded.shape, (1, 43))
+        self.assertTrue(__import__("numpy").isfinite(encoded).all())
+
+    def test_encode_human_inputs_ordinal(self) -> None:
+        patients = [
+            {
+                "age": 53,
+                "bmi": 23,
+                "has_given_birth": False,
+                "age_at_first_birth": None,
+                "is_postmenopausal": None,
+                "menopause_type": None,
+                "currently_on_hrt": None,
+                "first_degree_relatives_with_breast_cancer": 0,
+                "breast_density": None,
+                "prior_breast_procedure": False,
+                "last_mammogram_result": "negative",
+            }
+        ]
+        encoded = encode_human_inputs(patients, self.mapper, self.ordinal)
+        self.assertEqual(encoded.shape, (1, 26))
+        self.assertTrue(__import__("numpy").isfinite(encoded).all())
+
+    def test_encode_human_inputs_matches_existing_path(self) -> None:
+        patient = {
+            "age": 42,
+            "bmi": 27.5,
+            "has_given_birth": True,
+            "age_at_first_birth": 26,
+            "is_postmenopausal": False,
+            "menopause_type": None,
+            "currently_on_hrt": None,
+            "first_degree_relatives_with_breast_cancer": 1,
+            "breast_density": "heterogeneously dense",
+            "prior_breast_procedure": False,
+            "last_mammogram_result": "negative",
+        }
+        interface = human_to_interface_frame(patient)
+        from src.preprocessing.pipeline import encode_user_inputs
+
+        expected = encode_user_inputs(self.mapper, self.onehot, interface)
+        actual = encode_human_inputs(patient, self.mapper, self.onehot)
+        __import__("numpy").testing.assert_allclose(actual, expected, rtol=0, atol=0)
 
 
 if __name__ == "__main__":
