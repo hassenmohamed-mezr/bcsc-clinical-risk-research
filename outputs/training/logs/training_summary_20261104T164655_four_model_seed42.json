@@ -1,0 +1,205 @@
+{
+  "run_id": "20261104T164655_four_model_seed42",
+  "models": [
+    "logistic_regression",
+    "random_forest",
+    "gradient_boosting",
+    "mlp"
+  ],
+  "selected": {
+    "logistic_regression": {
+      "candidate_id": "logistic_regression_001",
+      "params": {
+        "C": 0.1,
+        "solver": "lbfgs"
+      },
+      "cv_mean_pr_auc": 0.00829032168635534,
+      "cv_mean_roc_auc": 0.6308427726120697,
+      "cv_mean_neg_brier": -0.00485460074139491
+    },
+    "random_forest": {
+      "candidate_id": "random_forest_003",
+      "params": {
+        "n_estimators": 300,
+        "max_depth": 16,
+        "min_samples_leaf": 10,
+        "max_features": "sqrt"
+      },
+      "cv_mean_pr_auc": 0.005411730104276897,
+      "cv_mean_roc_auc": 0.5129516180738664,
+      "cv_mean_neg_brier": -0.004872683445716941
+    },
+    "gradient_boosting": {
+      "candidate_id": "gradient_boosting_021",
+      "params": {
+        "learning_rate": 0.1,
+        "n_estimators": 200,
+        "max_depth": 2,
+        "subsample": 1.0
+      },
+      "cv_mean_pr_auc": 0.008291336041341874,
+      "cv_mean_roc_auc": 0.631928005505103,
+      "cv_mean_neg_brier": -0.004854590866248082
+    },
+    "mlp": {
+      "candidate_id": "mlp_003",
+      "params": {
+        "hidden_layer_sizes": [
+          32
+        ],
+        "alpha": 0.001,
+        "max_iter": 200
+      },
+      "cv_mean_pr_auc": 0.0068142443535213985,
+      "cv_mean_roc_auc": 0.5921166497226285,
+      "cv_mean_neg_brier": -0.004862520383702512
+    }
+  },
+  "validation": {
+    "logistic_regression": {
+      "pr_auc": 0.007884862283016849,
+      "roc_auc": 0.6242263499137564,
+      "recall": 0.0,
+      "specificity": 1.0,
+      "precision": null,
+      "brier": 0.004854982774351209,
+      "ece": 0.0005686047996810027,
+      "mce": 0.0028054487215274718
+    },
+    "random_forest": {
+      "pr_auc": 0.005265363333014218,
+      "roc_auc": 0.507778293093577,
+      "recall": 0.0,
+      "specificity": 1.0,
+      "precision": null,
+      "brier": 0.004859686476404867,
+      "ece": 0.0007021726664472821,
+      "mce": 0.0013912135412428158
+    },
+    "gradient_boosting": {
+      "pr_auc": 0.007845503465063582,
+      "roc_auc": 0.6269441674409174,
+      "recall": 0.0,
+      "specificity": 1.0,
+      "precision": null,
+      "brier": 0.004854963770994142,
+      "ece": 0.000401198519101344,
+      "mce": 0.0010895916517719307
+    },
+    "mlp": {
+      "pr_auc": 0.006935071984773717,
+      "roc_auc": 0.5944424307333359,
+      "recall": 0.0,
+      "specificity": 0.9999962680440072,
+      "precision": 0.0,
+      "brier": 0.0048609368632914415,
+      "ece": 0.0008921332441753479,
+      "mce": 0.0027408629815844137
+    }
+  },
+  "fit_records": {
+    "logistic_regression": {
+      "fit_seconds": 2.2955659999997806,
+      "warnings": [
+        "'n_jobs' has no effect since 1.8 and will be removed in 1.10. You provided 'n_jobs=1', please leave it unspecified.",
+        "'penalty' was deprecated in version 1.8 and will be removed in 1.10. To avoid this warning, leave 'penalty' set to its default value and use 'l1_ratio' or 'C' instead. Use l1_ratio=0 instead of penalty='l2', l1_ratio=1 instead of penalty='l1', l1_ratio set to a float between 0 and 1 instead of penalty='elasticnet', and C=np.inf instead of penalty=None."
+      ]
+    },
+    "random_forest": {
+      "fit_seconds": 93.82413819999965,
+      "warnings": []
+    },
+    "gradient_boosting": {
+      "fit_seconds": 124.17306520000056,
+      "warnings": [
+        "The parameter `criterion` is deprecated and will be removed in 1.11. It has no effect. Leave it to its default value to avoid this warning."
+      ]
+    },
+    "mlp": {
+      "fit_seconds": 24.79993999999988,
+      "warnings": []
+    }
+  },
+  "artifact_verification": {
+    "logistic_regression": {
+      "artifact": {
+        "path": "D:\\depi pro\\BCSC_Risk_Estimation\\models\\trained\\logistic_regression_calibrated.joblib",
+        "size_bytes": 1218948,
+        "sha256": "f258be640bdf3c7d57cbf0e0dadb05c3b988f6a024954c8ba4d7c6bcbb2e0e3d"
+      },
+      "classes": [
+        0,
+        1
+      ],
+      "probabilities_finite": true,
+      "probabilities_in_unit_interval": true,
+      "probability_column": "cancer=1",
+      "prediction_matches_in_memory": true
+    },
+    "random_forest": {
+      "artifact": {
+        "path": "D:\\depi pro\\BCSC_Risk_Estimation\\models\\trained\\random_forest_calibrated.joblib",
+        "size_bytes": 50504164,
+        "sha256": "6f1cafd80930c77565ad2fa782ca17e472d9dbdfb79ff7cfa61c0f1a43b51985"
+      },
+      "classes": [
+        0,
+        1
+      ],
+      "probabilities_finite": true,
+      "probabilities_in_unit_interval": true,
+      "probability_column": "cancer=1",
+      "prediction_matches_in_memory": true
+    },
+    "gradient_boosting": {
+      "artifact": {
+        "path": "D:\\depi pro\\BCSC_Risk_Estimation\\models\\trained\\gradient_boosting_calibrated.joblib",
+        "size_bytes": 1375908,
+        "sha256": "c7fc2b33b63a494a0fa6131b45764944ee9ed4a956d75c863d5359605e2eeeb5"
+      },
+      "classes": [
+        0,
+        1
+      ],
+      "probabilities_finite": true,
+      "probabilities_in_unit_interval": true,
+      "probability_column": "cancer=1",
+      "prediction_matches_in_memory": true
+    },
+    "mlp": {
+      "artifact": {
+        "path": "D:\\depi pro\\BCSC_Risk_Estimation\\models\\trained\\mlp_calibrated.joblib",
+        "size_bytes": 1251012,
+        "sha256": "9ac95d0592d855241479177441e43d2884c49a0ad0d17374aaabdb357d460fff"
+      },
+      "classes": [
+        0,
+        1
+      ],
+      "probabilities_finite": true,
+      "probabilities_in_unit_interval": true,
+      "probability_column": "cancer=1",
+      "prediction_matches_in_memory": true
+    }
+  },
+  "fold_balance": {
+    "within_tolerance": true,
+    "material_imbalance": false,
+    "weight_relative_deviation_tolerance": 0.05,
+    "prevalence_relative_deviation_tolerance": 0.1,
+    "violations": []
+  },
+  "plots": [
+    "D:\\depi pro\\BCSC_Risk_Estimation\\outputs\\training\\plots\\roc_curves_val.png",
+    "D:\\depi pro\\BCSC_Risk_Estimation\\outputs\\training\\plots\\pr_curves_val.png",
+    "D:\\depi pro\\BCSC_Risk_Estimation\\outputs\\training\\plots\\calibration_curves_val.png",
+    "D:\\depi pro\\BCSC_Risk_Estimation\\outputs\\training\\plots\\probability_distributions_val.png",
+    "D:\\depi pro\\BCSC_Risk_Estimation\\outputs\\training\\plots\\metric_comparison_val.png",
+    "D:\\depi pro\\BCSC_Risk_Estimation\\outputs\\training\\plots\\confusion_matrices_val.png",
+    "D:\\depi pro\\BCSC_Risk_Estimation\\outputs\\training\\plots\\cv_vs_validation_pr_auc.png",
+    "D:\\depi pro\\BCSC_Risk_Estimation\\outputs\\training\\plots\\cv_candidate_pr_auc.png"
+  ],
+  "manifest": "D:\\depi pro\\BCSC_Risk_Estimation\\outputs\\training\\logs\\search_manifest_20261104T164655_four_model_seed42.json",
+  "registry": "D:\\depi pro\\BCSC_Risk_Estimation\\outputs\\training\\experiments\\registry.csv",
+  "test_accessed": false
+}

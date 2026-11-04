@@ -1,0 +1,75 @@
+{
+  "run_id": "20261104T161223_four_model_seed42",
+  "models": [
+    "logistic_regression"
+  ],
+  "selected": {
+    "logistic_regression": {
+      "candidate_id": "logistic_regression_001",
+      "params": {
+        "C": 0.1,
+        "solver": "lbfgs"
+      },
+      "cv_mean_pr_auc": 0.00829032168635534,
+      "cv_mean_roc_auc": 0.6308427726120697,
+      "cv_mean_neg_brier": -0.00485460074139491
+    }
+  },
+  "validation": {
+    "logistic_regression": {
+      "pr_auc": 0.007884862283016849,
+      "roc_auc": 0.6242263499137564,
+      "recall": 0.0,
+      "specificity": 1.0,
+      "precision": null,
+      "brier": 0.004854982774351209,
+      "ece": 0.0005686047996810027,
+      "mce": 0.0028054487215274718
+    }
+  },
+  "fit_records": {
+    "logistic_regression": {
+      "fit_seconds": 1.258432300000095,
+      "warnings": [
+        "'n_jobs' has no effect since 1.8 and will be removed in 1.10. You provided 'n_jobs=1', please leave it unspecified.",
+        "'penalty' was deprecated in version 1.8 and will be removed in 1.10. To avoid this warning, leave 'penalty' set to its default value and use 'l1_ratio' or 'C' instead. Use l1_ratio=0 instead of penalty='l2', l1_ratio=1 instead of penalty='l1', l1_ratio set to a float between 0 and 1 instead of penalty='elasticnet', and C=np.inf instead of penalty=None."
+      ]
+    }
+  },
+  "artifact_verification": {
+    "logistic_regression": {
+      "artifact": {
+        "path": "D:\\depi pro\\BCSC_Risk_Estimation\\models\\trained\\logistic_regression_calibrated.joblib",
+        "size_bytes": 1218948,
+        "sha256": "f258be640bdf3c7d57cbf0e0dadb05c3b988f6a024954c8ba4d7c6bcbb2e0e3d"
+      },
+      "classes": [
+        0,
+        1
+      ],
+      "probabilities_finite": true,
+      "probabilities_in_unit_interval": true,
+      "probability_column": "cancer=1",
+      "prediction_matches_in_memory": true
+    }
+  },
+  "fold_balance": {
+    "within_tolerance": true,
+    "material_imbalance": false,
+    "weight_relative_deviation_tolerance": 0.05,
+    "prevalence_relative_deviation_tolerance": 0.1,
+    "violations": []
+  },
+  "plots": [
+    "D:\\depi pro\\BCSC_Risk_Estimation\\outputs\\training\\plots\\roc_curves_val.png",
+    "D:\\depi pro\\BCSC_Risk_Estimation\\outputs\\training\\plots\\pr_curves_val.png",
+    "D:\\depi pro\\BCSC_Risk_Estimation\\outputs\\training\\plots\\calibration_curves_val.png",
+    "D:\\depi pro\\BCSC_Risk_Estimation\\outputs\\training\\plots\\probability_distributions_val.png",
+    "D:\\depi pro\\BCSC_Risk_Estimation\\outputs\\training\\plots\\metric_comparison_val.png",
+    "D:\\depi pro\\BCSC_Risk_Estimation\\outputs\\training\\plots\\confusion_matrices_val.png",
+    "D:\\depi pro\\BCSC_Risk_Estimation\\outputs\\training\\plots\\cv_vs_validation_pr_auc.png",
+    "D:\\depi pro\\BCSC_Risk_Estimation\\outputs\\training\\plots\\cv_candidate_pr_auc.png"
+  ],
+  "manifest": "D:\\depi pro\\BCSC_Risk_Estimation\\outputs\\training\\logs\\search_manifest_20261104T161223_four_model_seed42.json",
+  "test_accessed": false
+}

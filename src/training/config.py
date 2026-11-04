@@ -400,7 +400,7 @@ EVALUATION_POLICY: dict[str, Any] = {
 CV_POLICY: dict[str, Any] = {
     "data": "Training only",
     "test_available": False,
-    "validation_use": "final evaluation only; never fold construction, fitting, tuning, or calibration",
+    "validation_use": "external Validation: final evaluation only; never fold construction, fitting, tuning, or calibration",
     "n_splits": 5,
     "splitter": "WeightedStratifiedKFold",
     "splitter_implementation": "src.training.cv.WeightedStratifiedKFold",
@@ -544,7 +544,7 @@ TUNING_SPACES: dict[str, dict[str, tuple[Any, ...]]] = {
     "mlp": {
         "hidden_layer_sizes": ((32,), (64, 32), (128, 64)),
         "alpha": (0.0001, 0.001),
-        "learning_rate_init": (0.001, 0.01),
+        "max_iter": (200, 400, 600),
     },
 }
 
@@ -634,6 +634,94 @@ def build_scaler(model_key: str):
         return None
     scaler = SCALERS[spec.scaler]
     return _resolve_class(scaler.estimator)(**dict(scaler.params))
+
+
+def build_model_pipeline(model_key: str):
+    """Construct the unfitted model artifact for one model family.
+
+    For the MLP this is a :class:`SampleWeightPipeline` whose steps are
+    ``StandardScaler`` and ``MLPClassifier``. Fitting it on a CV training fold
+    fits the scaler on that fold only; the fitted pipeline is serialized as one
+    artifact. The other families return their configured estimator.
+
+    The input is the matrix produced by the model's saved encoder; the encoder
+    itself remains a separate transform-only preprocessing artifact.
+    """
+    spec = get_model_spec(model_key)
+    estimator = build_estimator(model_key)
+    if spec.scaler is None:
+        return estimator
+    scaler = build_scaler(model_key)
+    if scaler is None:  # pragma: no cover - guarded by MODEL_SPECS
+        raise ValueError(f"model {model_key!r} declares a scaler but none was built")
+    return SampleWeightPipeline(
+        [
+            ("scaler", scaler),
+            ("classifier", estimator),
+        ]
+    )
+
+
+def build_calibrated_model(model_key: str, cv):
+    """Wrap one model artifact in a Training-only calibrated classifier.
+
+    ``cv`` must identify the pre-declared Training-only weighted folds, for
+    example a ``WeightedStratifiedKFold`` instance or a list of
+    ``(train_index, validation_index)`` pairs. Passing ``None`` is rejected so
+    the default integer splitter cannot silently replace the weighted folds.
+
+    The returned ``CalibratedClassifierCV`` is unfitted. With
+    ``ensemble=False``, fitting it fits the base pipeline on the full Training
+    split and the calibrator on weighted out-of-fold probabilities.
+    """
+    from sklearn.calibration import CalibratedClassifierCV
+
+    if cv is None:
+        raise ValueError(
+            "calibration requires explicit Training-only CV folds; "
+            "pass WeightedStratifiedKFold or a list of split pairs"
+        )
+    return CalibratedClassifierCV(
+        estimator=build_model_pipeline(model_key),
+        method=CALIBRATION_POLICY["method"],
+        cv=cv,
+        n_jobs=N_JOBS,
+        ensemble=CALIBRATION_POLICY["ensemble"],
+    )
+
+
+def build_training_calibrated_model(
+    model_key: str,
+    y,
+    sample_weight,
+    *,
+    split: str = TRAIN_SPLIT,
+):
+    """Build a calibrated model wired to Training-only weighted folds.
+
+    Only ``split="train"`` is accepted. Pass the Training target and ``count``
+    vector; the helper builds ``WeightedStratifiedKFold`` over those rows. The
+    external Validation and Test splits cannot be selected here.
+    """
+    if split != TRAIN_SPLIT:
+        raise ValueError(
+            f"calibration may use only {TRAIN_SPLIT!r}; got {split!r}"
+        )
+    if len(y) != len(sample_weight):
+        raise ValueError("y and sample_weight lengths differ")
+    if len(y) == 0:
+        raise ValueError("cannot build calibration folds from an empty target")
+
+    from src.training.cv import WeightedStratifiedKFold
+
+    return build_calibrated_model(
+        model_key,
+        cv=WeightedStratifiedKFold(
+            n_splits=CV_POLICY["n_splits"],
+            sample_weight=sample_weight,
+            random_state=CV_POLICY["seed"],
+        ),
+    )
 
 
 def load_preprocessing_metadata() -> dict[str, Any]:
@@ -735,12 +823,23 @@ def config_summary() -> dict[str, Any]:
 
     models: dict[str, Any] = {}
     for key, spec in MODEL_SPECS.items():
+        pipeline = build_model_pipeline(key)
         models[key] = {
             "display_name": spec.display_name,
             "estimator": spec.estimator,
             "encoder": spec.encoder,
             "encoder_width": encoders[spec.encoder]["n_features_out"],
             "scaler": spec.scaler,
+            "model_artifact": (
+                "SampleWeightPipeline"
+                if isinstance(pipeline, SampleWeightPipeline)
+                else type(pipeline).__name__
+            ),
+            "pipeline_steps": (
+                [name for name, _ in pipeline.steps]
+                if isinstance(pipeline, SampleWeightPipeline)
+                else None
+            ),
             "resolved_params": _resolved_model_params(spec),
             "notes": spec.notes,
         }
@@ -751,6 +850,7 @@ def config_summary() -> dict[str, Any]:
         "positive_class": POSITIVE_CLASS,
         "negative_class": NEGATIVE_CLASS,
         "weight": WEIGHT_COLUMN,
+        "code_9": dict(CODE_9_POLICY),
         "forbidden_model_columns": sorted(FORBIDDEN_MODEL_COLUMNS),
         "splits": {
             name: {
@@ -784,6 +884,8 @@ def config_summary() -> dict[str, Any]:
             "weight_column": EVALUATION_POLICY["weight_column"],
             "test_available_to_training": EVALUATION_POLICY["test_available_to_training"],
         },
+        "cross_validation": dict(CV_POLICY),
+        "calibration": dict(CALIBRATION_POLICY),
         "tuning": {
             "method": TUNING_POLICY["method"],
             "cross_validation": TUNING_POLICY["cross_validation"],
@@ -917,10 +1019,148 @@ def validate_config(
             fail(f"model {key!r} did not receive the central random_state")
         if spec.supports_n_jobs and resolved.get("n_jobs") != N_JOBS:
             fail(f"model {key!r} did not receive the central n_jobs")
+
+        try:
+            model_pipeline = build_model_pipeline(key)
+        except Exception as exc:  # noqa: BLE001
+            fail(f"model {key!r} pipeline cannot be constructed: {type(exc).__name__}: {exc}")
+        else:
+            if not hasattr(model_pipeline, "predict_proba"):
+                fail(f"model {key!r} model artifact does not expose predict_proba")
+            if hasattr(model_pipeline, "classes_"):
+                fail(f"model {key!r} model artifact was unexpectedly fitted")
+            if "sample_weight" not in inspect.signature(model_pipeline.fit).parameters:
+                fail(f"model {key!r} model artifact fit() does not accept sample_weight")
+            if spec.scaler is None and isinstance(model_pipeline, SampleWeightPipeline):
+                fail(f"model {key!r} must not bundle a scaler")
+            if spec.scaler is not None and not isinstance(model_pipeline, SampleWeightPipeline):
+                fail(f"model {key!r} must bundle its scaler in a SampleWeightPipeline")
+
+        if key == "mlp":
+            if spec.params.get("early_stopping") is not False:
+                fail("MLP early_stopping must be False in the initial experiment phase")
+            for early_only in ("validation_fraction", "n_iter_no_change"):
+                if early_only in spec.params:
+                    fail(f"MLP local parameter {early_only!r} must be removed when early stopping is disabled")
+            if "max_iter" not in spec.params:
+                fail("MLP must declare an initial max_iter")
+            if "max_iter" not in TUNING_SPACES.get("mlp", {}):
+                fail("MLP max_iter must be tuned with Training-only CV")
+            if not isinstance(model_pipeline, SampleWeightPipeline):
+                fail("MLP model artifact must be a SampleWeightPipeline")
+            else:
+                steps = dict(model_pipeline.steps)
+                if list(steps) != ["scaler", "classifier"]:
+                    fail(f"MLP pipeline steps must be ['scaler', 'classifier'], got {list(steps)}")
+                if type(steps.get("scaler")).__name__ != "StandardScaler":
+                    fail("MLP pipeline step 'scaler' must be StandardScaler")
+                if hasattr(steps.get("scaler"), "mean_"):
+                    fail("MLP scaler was unexpectedly fitted during configuration")
+                if type(steps.get("classifier")).__name__ != "MLPClassifier":
+                    fail("MLP pipeline step 'classifier' must be MLPClassifier")
+                if model_pipeline.get_params().get("classifier__early_stopping") is not False:
+                    fail("MLP pipeline classifier must have early_stopping=False")
         checks.append(f"model {key}")
     checks.append("model specs")
 
-    # 5. Evaluation policy.
+    # 5. Code 9 must remain one category for surgmeno and hrt.
+    if CODE_9_POLICY["treatment"] != "single category":
+        fail("code 9 must remain a single category")
+    if CODE_9_POLICY["split_into_unknown_and_not_applicable"] is not False:
+        fail("code 9 must not be split into Unknown and Not Applicable")
+    if CODE_9_POLICY["raw_data_change"] or CODE_9_POLICY["mapping_change"]:
+        fail("code 9 handling must not modify raw data or mapping")
+    for feature in CODE_9_POLICY["features"]:
+        if feature not in FEATURE_ORDER:
+            fail(f"code 9 feature {feature!r} is not in FEATURES")
+            continue
+        for family in ENCODERS:
+            names = encoder_info(family)["feature_names"]
+            if names.count(f"{feature}_9") != 1:
+                fail(f"encoder {family!r} must emit exactly one {feature}_9 column")
+            invented = [
+                name
+                for name in names
+                if name.startswith(f"{feature}_") and "unknown" in name.lower()
+            ]
+            if invented:
+                fail(f"encoder {family!r} invents code-9 subcategories: {invented}")
+    checks.append("surgmeno/hrt code 9")
+
+    # 6. Weighted cross-validation policy.
+    if CV_POLICY["data"] != "Training only":
+        fail("CV must use Training only")
+    if CV_POLICY["test_available"] is not False:
+        fail("CV must not expose the Test split")
+    if CV_POLICY["row_expansion"] is not False:
+        fail("CV must not expand aggregated rows")
+    if CV_POLICY["seed"] != RANDOM_STATE:
+        fail("CV seed does not match src.config.RANDOM_STATE")
+    if CV_POLICY["primary_scoring"] != "pr_auc":
+        fail("weighted PR-AUC must be the primary CV selection metric")
+    if "Validation" not in CV_POLICY["validation_use"]:
+        fail("CV policy must state that Validation is evaluation-only")
+    if TUNING_POLICY["cross_validation"]["splitter"] != CV_POLICY["splitter"]:
+        fail("tuning splitter does not match CV_POLICY")
+    if TUNING_POLICY["cross_validation"]["n_splits"] != CV_POLICY["n_splits"]:
+        fail("tuning n_splits does not match CV_POLICY")
+    if TUNING_POLICY["cross_validation"]["random_state"] != CV_POLICY["seed"]:
+        fail("tuning CV seed does not match CV_POLICY")
+    if TUNING_POLICY["primary_scoring"] != CV_POLICY["primary_scoring"]:
+        fail("tuning primary score does not match CV_POLICY")
+    if "sample_weight" not in CV_POLICY["score_weighting"]:
+        fail("CV policy must pass count to scoring, not only to fit")
+    if not set(("weight_sum", "weighted_prevalence")).issubset(CV_POLICY["fold_diagnostics"]):
+        fail("CV fold diagnostics must include represented weight and weighted prevalence")
+    checks.append("weighted CV policy")
+
+    # 7. Probability calibration policy.
+    if CALIBRATION_POLICY["required"] is not True:
+        fail("probability calibration is required")
+    if CALIBRATION_POLICY["method"] not in {"sigmoid", "isotonic"}:
+        fail(f"unsupported calibration method {CALIBRATION_POLICY['method']!r}")
+    if not isinstance(CALIBRATION_POLICY["ensemble"], bool):
+        fail("calibration ensemble must be a boolean")
+    if CALIBRATION_POLICY["data"] != "Training only":
+        fail("calibration must use Training only")
+    if CALIBRATION_POLICY["test_use"] != "forbidden":
+        fail("calibration must not use the Test split")
+    if "never" not in CALIBRATION_POLICY["validation_use"]:
+        fail("calibration must not fit or select on Validation")
+    try:
+        from sklearn.calibration import CalibratedClassifierCV
+
+        if "sample_weight" not in inspect.signature(CalibratedClassifierCV.fit).parameters:
+            fail("CalibratedClassifierCV.fit() does not accept sample_weight")
+        calibrated = build_calibrated_model("mlp", cv=CV_POLICY["n_splits"])
+        if type(calibrated).__name__ != "CalibratedClassifierCV":
+            fail("build_calibrated_model did not return CalibratedClassifierCV")
+        params = calibrated.get_params()
+        if params["method"] != CALIBRATION_POLICY["method"]:
+            fail("calibrated model method does not match CALIBRATION_POLICY")
+        if params["ensemble"] != CALIBRATION_POLICY["ensemble"]:
+            fail("calibrated model ensemble setting does not match CALIBRATION_POLICY")
+        if not isinstance(params["estimator"], SampleWeightPipeline):
+            fail("MLP calibration must wrap the scaler+MLP SampleWeightPipeline")
+        if hasattr(calibrated, "classes_"):
+            fail("calibrated model was unexpectedly fitted during configuration")
+
+        from src.training.cv import WeightedStratifiedKFold
+
+        weighted_calibrated = build_training_calibrated_model(
+            "mlp",
+            [0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+            [1.0] * 10,
+        )
+        if not isinstance(
+            weighted_calibrated.get_params()["cv"], WeightedStratifiedKFold
+        ):
+            fail("calibration must use the Training-only weighted splitter")
+    except Exception as exc:  # noqa: BLE001
+        fail(f"calibration configuration invalid: {type(exc).__name__}: {exc}")
+    checks.append("calibration policy")
+
+    # 8. Evaluation policy.
     if EVALUATION_POLICY["positive_class"] != POSITIVE_CLASS:
         fail("evaluation positive class mismatch")
     if EVALUATION_POLICY["threshold"] != DEFAULT_THRESHOLD:
@@ -939,7 +1179,7 @@ def validate_config(
         fail(f"missing required metrics: {sorted(required_metric_keys - set(METRICS))}")
     checks.append("evaluation policy")
 
-    # 6. Tuning and seed policy.
+    # 9. Tuning and seed policy.
     if TUNING_POLICY["cross_validation"]["random_state"] != RANDOM_STATE:
         fail("tuning CV does not use the central random_state")
     if TUNING_POLICY["data"] != "Training only":
@@ -958,7 +1198,7 @@ def validate_config(
         fail("SEED_POLICY random_state does not match src.config.RANDOM_STATE")
     checks.append("tuning/seed policy")
 
-    # 7. Outputs.
+    # 10. Outputs.
     required_outputs = {"models", "experiments", "predictions", "metrics", "logs", "reports"}
     if not required_outputs.issubset(OUTPUT_DIRECTORIES):
         fail(f"missing output directories: {sorted(required_outputs - set(OUTPUT_DIRECTORIES))}")
@@ -966,7 +1206,7 @@ def validate_config(
         fail("experiment registry is not inside the experiments directory")
     checks.append("output directories")
 
-    # 8. Optional live split check (Train/Validation only; Test is never loaded).
+    # 11. Optional live split check (Train/Validation only; Test is never loaded).
     if check_split_data:
         from src.data.load_splits import load_split
 

@@ -1,0 +1,76 @@
+{
+  "run_id": "20261104T161247_four_model_seed42",
+  "models": [
+    "gradient_boosting"
+  ],
+  "selected": {
+    "gradient_boosting": {
+      "candidate_id": "gradient_boosting_021",
+      "params": {
+        "learning_rate": 0.1,
+        "n_estimators": 200,
+        "max_depth": 2,
+        "subsample": 1.0
+      },
+      "cv_mean_pr_auc": 0.008291336041341874,
+      "cv_mean_roc_auc": 0.631928005505103,
+      "cv_mean_neg_brier": -0.004854590866248082
+    }
+  },
+  "validation": {
+    "gradient_boosting": {
+      "pr_auc": 0.007845503465063582,
+      "roc_auc": 0.6269441674409174,
+      "recall": 0.0,
+      "specificity": 1.0,
+      "precision": null,
+      "brier": 0.004854963770994142,
+      "ece": 0.000401198519101344,
+      "mce": 0.0010895916517719307
+    }
+  },
+  "fit_records": {
+    "gradient_boosting": {
+      "fit_seconds": 125.91388880000068,
+      "warnings": [
+        "The parameter `criterion` is deprecated and will be removed in 1.11. It has no effect. Leave it to its default value to avoid this warning."
+      ]
+    }
+  },
+  "artifact_verification": {
+    "gradient_boosting": {
+      "artifact": {
+        "path": "D:\\depi pro\\BCSC_Risk_Estimation\\models\\trained\\gradient_boosting_calibrated.joblib",
+        "size_bytes": 1375908,
+        "sha256": "c7fc2b33b63a494a0fa6131b45764944ee9ed4a956d75c863d5359605e2eeeb5"
+      },
+      "classes": [
+        0,
+        1
+      ],
+      "probabilities_finite": true,
+      "probabilities_in_unit_interval": true,
+      "probability_column": "cancer=1",
+      "prediction_matches_in_memory": true
+    }
+  },
+  "fold_balance": {
+    "within_tolerance": true,
+    "material_imbalance": false,
+    "weight_relative_deviation_tolerance": 0.05,
+    "prevalence_relative_deviation_tolerance": 0.1,
+    "violations": []
+  },
+  "plots": [
+    "D:\\depi pro\\BCSC_Risk_Estimation\\outputs\\training\\plots\\roc_curves_val.png",
+    "D:\\depi pro\\BCSC_Risk_Estimation\\outputs\\training\\plots\\pr_curves_val.png",
+    "D:\\depi pro\\BCSC_Risk_Estimation\\outputs\\training\\plots\\calibration_curves_val.png",
+    "D:\\depi pro\\BCSC_Risk_Estimation\\outputs\\training\\plots\\probability_distributions_val.png",
+    "D:\\depi pro\\BCSC_Risk_Estimation\\outputs\\training\\plots\\metric_comparison_val.png",
+    "D:\\depi pro\\BCSC_Risk_Estimation\\outputs\\training\\plots\\confusion_matrices_val.png",
+    "D:\\depi pro\\BCSC_Risk_Estimation\\outputs\\training\\plots\\cv_vs_validation_pr_auc.png",
+    "D:\\depi pro\\BCSC_Risk_Estimation\\outputs\\training\\plots\\cv_candidate_pr_auc.png"
+  ],
+  "manifest": "D:\\depi pro\\BCSC_Risk_Estimation\\outputs\\training\\logs\\search_manifest_20261104T161247_four_model_seed42.json",
+  "test_accessed": false
+}

@@ -1,0 +1,57 @@
+{
+  "model": "gradient_boosting",
+  "display_name": "Gradient Boosting",
+  "estimator": "sklearn.ensemble.GradientBoostingClassifier",
+  "encoder": "ordinal_tree",
+  "encoder_width": 26,
+  "scaler": null,
+  "selected_candidate": "gradient_boosting_021",
+  "selected_params": {
+    "learning_rate": 0.1,
+    "n_estimators": 200,
+    "max_depth": 2,
+    "subsample": 1.0
+  },
+  "cv": {
+    "mean_pr_auc": 0.008291336041341874,
+    "std_pr_auc": 0.0003353842136218947,
+    "mean_roc_auc": 0.631928005505103,
+    "std_roc_auc": 0.003918784807332934,
+    "mean_neg_brier": -0.004854590866248082,
+    "std_neg_brier": 2.160353145168035e-06,
+    "n_splits": 5,
+    "splitter": "WeightedStratifiedKFold",
+    "seed": 42
+  },
+  "calibration": {
+    "method": "sigmoid",
+    "ensemble": false,
+    "data": "Training only"
+  },
+  "feature_order": [
+    "agegrp",
+    "bmi",
+    "agefirst",
+    "menopaus",
+    "surgmeno",
+    "hrt",
+    "nrelbc",
+    "density",
+    "brstproc",
+    "lastmamm"
+  ],
+  "target": "cancer",
+  "positive_class": 1,
+  "weight": "count",
+  "threshold": 0.5,
+  "random_state": 42,
+  "n_jobs": 1,
+  "fit_seconds": 124.17306520000056,
+  "fit_warnings": [
+    "The parameter `criterion` is deprecated and will be removed in 1.11. It has no effect. Leave it to its default value to avoid this warning."
+  ],
+  "artifact": "D:\\depi pro\\BCSC_Risk_Estimation\\models\\trained\\gradient_boosting_calibrated.joblib",
+  "artifact_sha256": "c7fc2b33b63a494a0fa6131b45764944ee9ed4a956d75c863d5359605e2eeeb5",
+  "encoder_artifact": "D:\\depi pro\\BCSC_Risk_Estimation\\models\\preprocessing\\ordinal_tree_pipeline.joblib",
+  "encoder_sha256": "a95345c4932be9623d6b6c29f7d3e5b906ded00485488b96dd63ca218962139d"
+}

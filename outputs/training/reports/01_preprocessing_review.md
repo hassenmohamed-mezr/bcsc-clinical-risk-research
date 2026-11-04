@@ -2,6 +2,11 @@
 
 Date: 2026-11-04. Scope: approved features, raw-input mapper, both encoder families, train-only fitting, validation transform, column exclusions, and saved artifacts. No implementation was modified and no pipeline was refit. `test.csv` was not read.
 
+> **Status note:** the `surgmeno`/`hrt` policy divergence noted below is resolved as a documented
+> limitation in `outputs/training/reports/07_final_experiment_decisions.md`: code 9 stays one
+> category because the source combines Unknown and Not Applicable, and raw data/mapping are not
+> changed. The domain-validation finding remains open.
+
 ## Verdict
 
 Verified: the saved artifacts load, expose the approved 10 features in the fixed order, and transform validation data correctly. Two findings need follow-up: a policy/implementation divergence for `surgmeno`/`hrt`, and incomplete domain validation when transforming BCSC-coded data. Neither affects the validated user-input path today.
@@ -67,7 +72,7 @@ Both joblib objects are fitted `ColumnTransformer` instances with the expected t
 
 ## Potential issues
 
-1. **`surgmeno`/`hrt` policy divergence.** Report 12 selects `menopaus=0 → Not applicable`, otherwise `9 → Unknown` (provisional). The implementation maps interface `0` to combined BCSC `9` and encodes it as one category; no conditional split exists. Report 14 documents this provisional choice, but the authoritative policy is not fully implemented.
+1. **`surgmeno`/`hrt` policy divergence (later resolved).** Report 12 selected `menopaus=0 → Not applicable`, otherwise `9 → Unknown` (provisional). The implementation maps interface `0` to combined BCSC `9` and encodes it as one category; no conditional split exists. Report 07 confirms the combined category as the final policy, documenting the source ambiguity and prohibiting raw-data/mapping changes. Report 14 documents the earlier provisional choice.
 2. **Weak validation of BCSC-coded transform inputs.** Nominal one-hot encoders use `handle_unknown="ignore"`; an undocumented nominal code such as `agefirst=7` becomes an all-zero block instead of raising. The one-hot family also accepts an undocumented `agegrp=11` as all-zero. The ordinal-tree family rejects invalid ordinal codes but still ignores invalid nominal codes. The raw-input mapper protects the user path; direct source-data transforms are less strict.
 3. **Ordinal spacing assumptions.** Ranks for `bmi`, `density`, and `nrelbc` imply equal spacing, although the bands are not equally wide and `nrelbc` is top-coded at 2+. The family is documented as tree-oriented; it is not appropriate for a linear model without review.
 4. **No training-data fingerprint.** Artifacts record row/weight counts but not a hash of `train.csv`; stale artifacts would not be detectable from the files alone.

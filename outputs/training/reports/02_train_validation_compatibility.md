@@ -2,6 +2,11 @@
 
 Date: 2026-11-04. Scope: Training and Validation splits against the saved preprocessing artifacts. Only `transform_features` was used; nothing was fitted or refit. `test.csv` was not opened. No datasets or artifacts were modified.
 
+> **Status note:** the encoder/scaler choice left open in this check is now fixed in
+> `outputs/training/reports/07_final_experiment_decisions.md` (Logistic Regression → `onehot` without
+> scaling, Random Forest/Gradient Boosting → `ordinal_tree`, MLP → `onehot` with an in-pipeline
+> `StandardScaler`). The compatibility findings below remain valid.
+
 ## Verdict
 
 **PASS — no blocking incompatibility.** Train and Validation are compatible with both saved encoders. All 10 features are present in the required order after loading, all categorical values are documented, target and weights are valid, and both pipelines produce stable, finite matrices. Four caveats are noted below; none is caused by the current data.
@@ -85,9 +90,9 @@ Both artifacts loaded successfully and accepted both splits:
 No current feature, category, shape, target, or weight mismatch would cause a training error. Remaining risks are operational/semantic:
 
 1. **Raw column order.** Reading `train.csv`/`val.csv` directly and passing the DataFrame to the pipeline will raise because raw order differs from `FEATURES`. Use `load_split()` or reorder columns; do not bypass the loader.
-2. **`surgmeno`/`hrt` policy divergence.** Both remain a combined code-9 category; the conditional Not Applicable recode from report 12 is not implemented. This does not break training but leaves a pending semantic decision.
+2. **`surgmeno`/`hrt` policy divergence (later resolved).** Both remain a combined code-9 category; the conditional Not Applicable recode from report 12 is not implemented. This does not break training. Report 07 confirms the combined category is the final policy and records the source ambiguity as a documented limitation.
 3. **Latent invalid-code handling.** The one-hot family accepts undocumented codes as all-zero blocks, and nominal encoders in both families ignore unseen codes. No such values exist in train/val, so this is not triggering today; strict domain validation would make future failures explicit.
-4. **Encoder choice remains open.** Both artifacts are compatible; one must be selected with the final model family.
+4. **Encoder choice (later resolved).** Both artifacts are compatible; report 07 fixes Logistic Regression → `onehot` (no scaler), Random Forest/Gradient Boosting → `ordinal_tree`, MLP → `onehot` plus an in-pipeline `StandardScaler`.
 
 Artifact SHA-256 values were identical before and after this check; no refitting occurred.
 

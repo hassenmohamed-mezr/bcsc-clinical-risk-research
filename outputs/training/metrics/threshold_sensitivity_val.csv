@@ -1,0 +1,61 @@
+model,display_name,threshold,is_primary_threshold,recall,specificity,precision,predicted_positive_weight,tp_w,fp_w,tn_w,fn_w,note
+logistic_regression,Logistic Regression,0.001,False,1.0,0.0014368030572183494,0.004890548410850695,268886.0,1315.0,267571.0,385.0,0.0,descriptive development analysis only; not used for selection
+logistic_regression,Logistic Regression,0.0025,False,0.9498098859315589,0.1157839346758423,0.005243933159795113,238180.0,1249.0,236931.0,31025.0,66.0,descriptive development analysis only; not used for selection
+logistic_regression,Logistic Regression,0.005,False,0.6045627376425855,0.5684104853035573,0.006827433400319472,116442.0,795.0,115647.0,152309.0,520.0,descriptive development analysis only; not used for selection
+logistic_regression,Logistic Regression,0.0075,False,0.26692015209125475,0.8565062920778038,0.009046158604159686,38801.0,351.0,38450.0,229506.0,964.0,descriptive development analysis only; not used for selection
+logistic_regression,Logistic Regression,0.01,False,0.08821292775665399,0.9630125841556076,0.011568764336292012,10027.0,116.0,9911.0,258045.0,1199.0,descriptive development analysis only; not used for selection
+logistic_regression,Logistic Regression,0.02,False,0.0022813688212927757,0.9996006807087731,0.02727272727272727,110.0,3.0,107.0,267849.0,1312.0,descriptive development analysis only; not used for selection
+logistic_regression,Logistic Regression,0.03,False,0.0,0.9999925360880144,0.0,2.0,0.0,2.0,267954.0,1315.0,descriptive development analysis only; not used for selection
+logistic_regression,Logistic Regression,0.05,False,0.0,1.0,,0.0,0.0,0.0,267956.0,1315.0,descriptive development analysis only; not used for selection
+logistic_regression,Logistic Regression,0.075,False,0.0,1.0,,0.0,0.0,0.0,267956.0,1315.0,descriptive development analysis only; not used for selection
+logistic_regression,Logistic Regression,0.1,False,0.0,1.0,,0.0,0.0,0.0,267956.0,1315.0,descriptive development analysis only; not used for selection
+logistic_regression,Logistic Regression,0.15,False,0.0,1.0,,0.0,0.0,0.0,267956.0,1315.0,descriptive development analysis only; not used for selection
+logistic_regression,Logistic Regression,0.2,False,0.0,1.0,,0.0,0.0,0.0,267956.0,1315.0,descriptive development analysis only; not used for selection
+logistic_regression,Logistic Regression,0.3,False,0.0,1.0,,0.0,0.0,0.0,267956.0,1315.0,descriptive development analysis only; not used for selection
+logistic_regression,Logistic Regression,0.4,False,0.0,1.0,,0.0,0.0,0.0,267956.0,1315.0,descriptive development analysis only; not used for selection
+logistic_regression,Logistic Regression,0.5,True,0.0,1.0,,0.0,0.0,0.0,267956.0,1315.0,primary approved threshold
+random_forest,Random Forest,0.001,False,1.0,0.0,0.004883555971493403,269271.0,1315.0,267956.0,0.0,0.0,descriptive development analysis only; not used for selection
+random_forest,Random Forest,0.0025,False,1.0,0.0,0.004883555971493403,269271.0,1315.0,267956.0,0.0,0.0,descriptive development analysis only; not used for selection
+random_forest,Random Forest,0.005,False,0.22965779467680608,0.7719401692815239,0.004917605679671725,61412.0,302.0,61110.0,206846.0,1013.0,descriptive development analysis only; not used for selection
+random_forest,Random Forest,0.0075,False,0.0,0.9999701443520578,0.0,8.0,0.0,8.0,267948.0,1315.0,descriptive development analysis only; not used for selection
+random_forest,Random Forest,0.01,False,0.0,1.0,,0.0,0.0,0.0,267956.0,1315.0,descriptive development analysis only; not used for selection
+random_forest,Random Forest,0.02,False,0.0,1.0,,0.0,0.0,0.0,267956.0,1315.0,descriptive development analysis only; not used for selection
+random_forest,Random Forest,0.03,False,0.0,1.0,,0.0,0.0,0.0,267956.0,1315.0,descriptive development analysis only; not used for selection
+random_forest,Random Forest,0.05,False,0.0,1.0,,0.0,0.0,0.0,267956.0,1315.0,descriptive development analysis only; not used for selection
+random_forest,Random Forest,0.075,False,0.0,1.0,,0.0,0.0,0.0,267956.0,1315.0,descriptive development analysis only; not used for selection
+random_forest,Random Forest,0.1,False,0.0,1.0,,0.0,0.0,0.0,267956.0,1315.0,descriptive development analysis only; not used for selection
+random_forest,Random Forest,0.15,False,0.0,1.0,,0.0,0.0,0.0,267956.0,1315.0,descriptive development analysis only; not used for selection
+random_forest,Random Forest,0.2,False,0.0,1.0,,0.0,0.0,0.0,267956.0,1315.0,descriptive development analysis only; not used for selection
+random_forest,Random Forest,0.3,False,0.0,1.0,,0.0,0.0,0.0,267956.0,1315.0,descriptive development analysis only; not used for selection
+random_forest,Random Forest,0.4,False,0.0,1.0,,0.0,0.0,0.0,267956.0,1315.0,descriptive development analysis only; not used for selection
+random_forest,Random Forest,0.5,True,0.0,1.0,,0.0,0.0,0.0,267956.0,1315.0,primary approved threshold
+gradient_boosting,Gradient Boosting,0.001,False,1.0,0.002746719610682351,0.004896940808460722,268535.0,1315.0,267220.0,736.0,0.0,descriptive development analysis only; not used for selection
+gradient_boosting,Gradient Boosting,0.0025,False,0.9437262357414449,0.13845556733195002,0.005346902372714856,232097.0,1241.0,230856.0,37100.0,74.0,descriptive development analysis only; not used for selection
+gradient_boosting,Gradient Boosting,0.005,False,0.6106463878326996,0.5549231963456687,0.0066880996801705755,120064.0,803.0,119261.0,148695.0,512.0,descriptive development analysis only; not used for selection
+gradient_boosting,Gradient Boosting,0.0075,False,0.24562737642585553,0.8533005418800101,0.008149979814291481,39632.0,323.0,39309.0,228647.0,992.0,descriptive development analysis only; not used for selection
+gradient_boosting,Gradient Boosting,0.01,False,0.06920152091254753,0.9720588454820941,0.012008445500131961,7578.0,91.0,7487.0,260469.0,1224.0,descriptive development analysis only; not used for selection
+gradient_boosting,Gradient Boosting,0.02,False,0.0022813688212927757,0.9992797324933944,0.015306122448979591,196.0,3.0,193.0,267763.0,1312.0,descriptive development analysis only; not used for selection
+gradient_boosting,Gradient Boosting,0.03,False,0.001520912547528517,0.9998395258923107,0.044444444444444446,45.0,2.0,43.0,267913.0,1313.0,descriptive development analysis only; not used for selection
+gradient_boosting,Gradient Boosting,0.05,False,0.0,0.9999925360880144,0.0,2.0,0.0,2.0,267954.0,1315.0,descriptive development analysis only; not used for selection
+gradient_boosting,Gradient Boosting,0.075,False,0.0,1.0,,0.0,0.0,0.0,267956.0,1315.0,descriptive development analysis only; not used for selection
+gradient_boosting,Gradient Boosting,0.1,False,0.0,1.0,,0.0,0.0,0.0,267956.0,1315.0,descriptive development analysis only; not used for selection
+gradient_boosting,Gradient Boosting,0.15,False,0.0,1.0,,0.0,0.0,0.0,267956.0,1315.0,descriptive development analysis only; not used for selection
+gradient_boosting,Gradient Boosting,0.2,False,0.0,1.0,,0.0,0.0,0.0,267956.0,1315.0,descriptive development analysis only; not used for selection
+gradient_boosting,Gradient Boosting,0.3,False,0.0,1.0,,0.0,0.0,0.0,267956.0,1315.0,descriptive development analysis only; not used for selection
+gradient_boosting,Gradient Boosting,0.4,False,0.0,1.0,,0.0,0.0,0.0,267956.0,1315.0,descriptive development analysis only; not used for selection
+gradient_boosting,Gradient Boosting,0.5,True,0.0,1.0,,0.0,0.0,0.0,267956.0,1315.0,primary approved threshold
+mlp,MLP Neural Network,0.001,False,1.0,0.0,0.004883555971493403,269271.0,1315.0,267956.0,0.0,0.0,descriptive development analysis only; not used for selection
+mlp,MLP Neural Network,0.0025,False,1.0,0.0,0.004883555971493403,269271.0,1315.0,267956.0,0.0,0.0,descriptive development analysis only; not used for selection
+mlp,MLP Neural Network,0.005,False,0.4220532319391635,0.7046044873038857,0.00696291463843027,79708.0,555.0,79153.0,188803.0,760.0,descriptive development analysis only; not used for selection
+mlp,MLP Neural Network,0.0075,False,0.0661596958174905,0.9682522503694636,0.010123341866418431,8594.0,87.0,8507.0,259449.0,1228.0,descriptive development analysis only; not used for selection
+mlp,MLP Neural Network,0.01,False,0.02129277566539924,0.990281986594814,0.010638297872340425,2632.0,28.0,2604.0,265352.0,1287.0,descriptive development analysis only; not used for selection
+mlp,MLP Neural Network,0.02,False,0.0045627376425855515,0.9987609906103987,0.01775147928994083,338.0,6.0,332.0,267624.0,1309.0,descriptive development analysis only; not used for selection
+mlp,MLP Neural Network,0.03,False,0.0007604562737642585,0.9994663302930332,0.006944444444444444,144.0,1.0,143.0,267813.0,1314.0,descriptive development analysis only; not used for selection
+mlp,MLP Neural Network,0.05,False,0.0007604562737642585,0.9997648867724552,0.015625,64.0,1.0,63.0,267893.0,1314.0,descriptive development analysis only; not used for selection
+mlp,MLP Neural Network,0.075,False,0.0007604562737642585,0.9999029691441879,0.037037037037037035,27.0,1.0,26.0,267930.0,1314.0,descriptive development analysis only; not used for selection
+mlp,MLP Neural Network,0.1,False,0.0007604562737642585,0.9999328247921301,0.05263157894736842,19.0,1.0,18.0,267938.0,1314.0,descriptive development analysis only; not used for selection
+mlp,MLP Neural Network,0.15,False,0.0007604562737642585,0.999966412396065,0.1,10.0,1.0,9.0,267947.0,1314.0,descriptive development analysis only; not used for selection
+mlp,MLP Neural Network,0.2,False,0.0,0.9999776082640434,0.0,6.0,0.0,6.0,267950.0,1315.0,descriptive development analysis only; not used for selection
+mlp,MLP Neural Network,0.3,False,0.0,0.9999925360880144,0.0,2.0,0.0,2.0,267954.0,1315.0,descriptive development analysis only; not used for selection
+mlp,MLP Neural Network,0.4,False,0.0,0.9999962680440072,0.0,1.0,0.0,1.0,267955.0,1315.0,descriptive development analysis only; not used for selection
+mlp,MLP Neural Network,0.5,True,0.0,0.9999962680440072,0.0,1.0,0.0,1.0,267955.0,1315.0,primary approved threshold

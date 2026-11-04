@@ -25,7 +25,7 @@ Inspected on 2026-11-04 from the active Python environment:
 Consequences:
 
 - The only installed MLP implementation is `sklearn.neural_network.MLPClassifier`. PyTorch is not part of the current environment; its settings are defined conditionally in Section 5.
-- The only installed Gradient Boosting implementations are `sklearn.ensemble.GradientBoostingClassifier` and `sklearn.ensemble.HistGradientBoostingClassifier`. The final Gradient Boosting library remains unresolved in report 03; Section 6 records the settings required if an external library is selected later.
+- Gradient Boosting is fixed to `sklearn.ensemble.GradientBoostingClassifier` for this phase. XGBoost, LightGBM, and CatBoost are not installed and are not part of the current experiment; Section 6 retains conditional settings only for a future, separately documented experiment.
 - Versions above are observed, not pinned. Exact environment recreation is therefore not currently guaranteed; each experiment must record its own environment snapshot.
 
 ## 2. Central configuration module
@@ -82,16 +82,16 @@ Every estimator must be constructed with explicit `random_state=RANDOM_STATE`, e
 | `LogisticRegression` | `random_state=RANDOM_STATE` | `lbfgs` is deterministic; `liblinear`, `sag`, and `saga` use the seed. Keep solver and `max_iter` in the experiment configuration. |
 | `RandomForestClassifier` | `random_state=RANDOM_STATE`, `n_jobs=N_JOBS` | Bootstrap sampling uses the seed. `n_jobs=1` is the reproducible default. |
 | `GradientBoostingClassifier` | `random_state=RANDOM_STATE` | `subsample < 1.0` uses the seed; record `subsample`. No `n_jobs`. |
-| `HistGradientBoostingClassifier` | `random_state=RANDOM_STATE` | `early_stopping` uses a seeded internal validation split; record `early_stopping`, `validation_fraction`, and `n_iter_no_change`. OpenMP threading is controlled at launch (Section 8). |
-| `MLPClassifier` | `random_state=RANDOM_STATE`, `shuffle=True` | Weight initialisation and shuffling use the seed; `early_stopping` uses a seeded validation split. Keep solver, architecture, `max_iter`, and early-stopping settings in the configuration. |
+| `HistGradientBoostingClassifier` | `random_state=RANDOM_STATE` | Future experiment only; not used in this phase. `early_stopping` uses a seeded internal validation split; record `early_stopping`, `validation_fraction`, and `n_iter_no_change`. OpenMP threading is controlled at launch (Section 8). |
+| `MLPClassifier` | `random_state=RANDOM_STATE`, `shuffle=True`, `early_stopping=False` | Weight initialisation and shuffling use the seed. Early stopping is disabled in this phase; `max_iter` is tuned with Training-only CV. The MLP is wrapped with `StandardScaler` in a `SampleWeightPipeline`; record solver, architecture, `max_iter`, and scaler settings. |
 
 Rules:
 
 - No estimator may rely on its default `random_state=None`.
-- Do not introduce `train_test_split` on the frozen data. If internal cross-validation is required, use `StratifiedKFold(n_splits=5, shuffle=True, random_state=RANDOM_STATE)` on Training only, with the same folds for every compared model; pass `count` as `sample_weight` inside each fold.
+- Do not introduce `train_test_split` on the frozen data. Internal cross-validation uses `WeightedStratifiedKFold(n_splits=5, random_state=RANDOM_STATE)` on Training only, with the same folds for every compared model; pass `count` as `sample_weight` inside each fold to both `fit` and weighted scoring.
 - Any random resampling, bootstrap, or hyperparameter search must use `RANDOM_STATE` or a recorded deterministic child seed.
 - Existing preprocessing encoders are deterministic and must be applied with `transform`; no refitting is part of a training experiment.
-- The MLP scaler, if used, is fitted on the encoded Training matrix only and saved with the experiment.
+- The MLP `StandardScaler` is a step inside the MLP model pipeline. It is fitted on each CV fold's training rows only, applied unchanged to that fold's validation rows, and fitted on the full Training matrix for the final model. The scaler and MLP are serialized together as one joblib artifact.
 
 ## 5. MLP framework settings
 
@@ -100,10 +100,18 @@ Rules:
 `sklearn.neural_network.MLPClassifier` is the only installed MLP implementation. It is the selected MLP framework unless the environment is changed and the change is documented. Use:
 
 ```python
-MLPClassifier(..., random_state=RANDOM_STATE, shuffle=True)
+MLPClassifier(..., random_state=RANDOM_STATE, shuffle=True, early_stopping=False)
 ```
 
-Also record the solver, hidden-layer sizes, activation, alpha, learning rate, batch size, maximum iterations, and early-stopping settings. The existing `onehot` encoder plus a Training-fitted `StandardScaler` remains the recommended input route from report 03.
+Also record the solver, hidden-layer sizes, activation, alpha, learning rate, batch size, `max_iter`, and the scaler setting. The existing `onehot` encoder plus a `StandardScaler` inside the MLP model pipeline is the chosen input route:
+
+```python
+SampleWeightPipeline(
+    [("scaler", StandardScaler()), ("classifier", MLPClassifier(...))]
+)
+```
+
+The pipeline is fitted fresh per CV training fold, so the scaler sees only that fold's training rows; the fitted pipeline is serialized as a single artifact for the final model. Early stopping is disabled and `max_iter` is selected with Training-only weighted CV; the external Validation split is not used for early stopping or hyperparameter selection.
 
 ### 5.2 PyTorch settings if it is added later
 
@@ -123,15 +131,15 @@ GPU kernels, CUDA/cuDNN versions, and non-deterministic reductions can still pre
 
 ## 6. Gradient Boosting library settings
 
-The final library is not selected. The installed and currently runnable options are the two scikit-learn estimators in Section 4. If an external library is selected later, it must be installed, version-pinned, and recorded with the run.
+The library is fixed to scikit-learn `GradientBoostingClassifier` for this phase. XGBoost, LightGBM, and CatBoost are not installed and are not used; the rows below for those libraries are conditional notes for a future, separately documented experiment.
 
 | Library | Seed and determinism settings to use |
 |---|---|
-| scikit-learn `GradientBoostingClassifier` | `random_state=RANDOM_STATE`; record `subsample`, `learning_rate`, `n_estimators`, and loss. |
-| scikit-learn `HistGradientBoostingClassifier` | `random_state=RANDOM_STATE`; record early-stopping settings; limit OpenMP threads at launch. |
-| XGBoost | `random_state=RANDOM_STATE` (alias `seed`), single-threaded CPU execution (`nthread=1` / `n_jobs=1`), `tree_method="hist"` or another deterministic CPU method. GPU training is not accepted as reproducible by default. |
-| LightGBM | `random_state=RANDOM_STATE`, `deterministic=True`, `force_col_wise=True`, `num_threads=1`; also record `bagging_seed`, `feature_fraction_seed`, and `data_random_seed` if used. |
-| CatBoost | `random_seed=RANDOM_STATE`, `thread_count=1`, CPU training (`task_type="CPU"`); GPU determinism is not guaranteed. |
+| scikit-learn `GradientBoostingClassifier` | **Selected.** `random_state=RANDOM_STATE`; record `subsample`, `learning_rate`, `n_estimators`, and loss. |
+| scikit-learn `HistGradientBoostingClassifier` | Future experiment only; not used in this phase. `random_state=RANDOM_STATE`; record early-stopping settings; limit OpenMP threads at launch. |
+| XGBoost | Future experiment only; not installed. `random_state=RANDOM_STATE` (alias `seed`), single-threaded CPU execution (`nthread=1` / `n_jobs=1`), `tree_method="hist"` or another deterministic CPU method. GPU training is not accepted as reproducible by default. |
+| LightGBM | Future experiment only; not installed. `random_state=RANDOM_STATE`, `deterministic=True`, `force_col_wise=True`, `num_threads=1`; also record `bagging_seed`, `feature_fraction_seed`, and `data_random_seed` if used. |
+| CatBoost | Future experiment only; not installed. `random_seed=RANDOM_STATE`, `thread_count=1`, CPU training (`task_type="CPU"`); GPU determinism is not guaranteed. |
 
 The external-library rows are conditional and were not executed or API-validated in this environment. If the selected library changes, every model must be re-run; results from different Gradient Boosting libraries are separate experiments.
 
@@ -145,7 +153,7 @@ The external-library rows are conditional and were not executed or API-validated
 - Do not resample, undersample, or oversample rows for official comparisons. `count` is the frequency weight and must be supplied to fitting and evaluation. If a resampling experiment is ever added, it must use a recorded seed and is not directly comparable to the weighted baseline.
 - Preprocessing is transform-only. The `onehot`/`ordinal_tree` artifacts and their SHA-256 values must be recorded with the experiment.
 - Before each run, verify the Training/Validation row counts, weight sums, and weighted cancer rates against the frozen reference (Train: 152,149 rows / 1,525,868 weight / 0.488378%; Validation: 28,316 rows / 269,271 weight / 0.488356%). A mismatch invalidates the run.
-- Internal cross-validation, if used, partitions Training only and uses the fixed stratified folds described in Section 4.
+- Internal cross-validation, if used, partitions Training only and uses the fixed weighted stratified folds described in Section 4. Validation is not part of any CV fold, and Test is never loaded.
 
 ## 8. Deterministic runtime settings
 
@@ -189,7 +197,7 @@ Each run directory must contain:
 
 | File | Contents |
 |---|---|
-| `config.json` | Model class and full resolved hyperparameters, encoder family, encoder artifact path and SHA-256, scaler details, `RANDOM_STATE`, `N_JOBS`, internal-CV settings, threshold, seed list, and any resampling settings |
+| `config.json` | Model class and full resolved hyperparameters, encoder family, encoder artifact path and SHA-256, scaler details (for MLP: scaler pipeline step), `RANDOM_STATE`, `N_JOBS`, weighted CV fold settings and diagnostics, calibration settings, threshold, seed list, and any resampling settings |
 | `environment.json` | Output of `src.config.environment_snapshot()`, plus `pip freeze`, git commit/HEAD, git dirty state, and platform/hardware |
 | `splits.json` | Paths, SHA-256, row counts, weight sums, and weighted cancer rates for the Training and Validation files used |
 | `metrics.json` | Weighted Validation metrics from report 04: ROC-AUC, PR-AUC, prevalence, Brier, and threshold-dependent recall, specificity, precision, weighted TP/FP/TN/FN at `t = 0.5`; undefined values as `null` with a reason |
@@ -215,13 +223,14 @@ Recording rules:
 1. **Unpinned dependencies.** `requirements.txt` is empty and the observed versions are not locked. Installing later versions can change numerical results or defaults. A full `pip freeze` and environment snapshot per run are mandatory; dependency pinning is recommended before final comparison.
 2. **Floating-point and threading.** BLAS/OpenMP reduction order, CPU architecture, and thread count can change the last digits even with fixed seeds. Single-threaded CPU execution reduces but does not eliminate this.
 3. **No external MLP/boosting libraries installed.** PyTorch, XGBoost, LightGBM, and CatBoost settings are documented conditionally and have not been executed. Their APIs and deterministic behaviour must be verified if adopted.
-4. **scikit-learn MLP.** Weight initialisation, shuffling, and early-stopping splits are seeded, but solver and BLAS behaviour may still produce small run-to-run differences across environments.
-5. **HistGradientBoosting.** OpenMP parallelism is controlled by launch-time environment variables; setting them after import is unreliable.
+4. **scikit-learn MLP.** Weight initialisation and shuffling are seeded, but solver and BLAS behaviour may still produce small run-to-run differences across environments. Early stopping is disabled, so there is no internal early-stopping split; `max_iter` must be tuned with Training-only CV.
+5. **HistGradientBoosting.** Future experiment only. OpenMP parallelism is controlled by launch-time environment variables; setting them after import is unreliable.
 6. **GPU execution.** CUDA/cuDNN kernels and some reductions are not bitwise deterministic. CPU is the reproducible default; any GPU run must record hardware, driver, CUDA/cuDNN versions, and deterministic settings, and should not be mixed with CPU results.
-7. **Serialized artifact bytes.** Joblib/pickle output may differ byte-for-byte between runs even when the fitted model is equivalent. Compare model content and metrics, not only file hashes.
+7. **Serialized artifact bytes.** Joblib/pickle output may differ byte-for-byte between runs even when the fitted model is equivalent. Compare model content and metrics, not only file hashes. The MLP scaler and classifier are stored in one artifact; load the whole artifact rather than reconstructing the scaler separately.
 8. **Frozen split provenance.** The split files have no embedded fingerprint. Their SHA-256 values must be recorded per run; a changed file makes prior results non-comparable.
-9. **Pending preprocessing decision.** A future `surgmeno`/`hrt` recode changes the encoded matrix and invalidates comparisons made with the current artifacts.
-10. **Exact bitwise reproducibility is not guaranteed.** The achievable target is repeatable results under the same data, code, configuration, seed, hardware, and pinned environment, with any residual numerical differences documented.
+9. **Code 9 is semantically ambiguous.** `surgmeno` and `hrt` keep code 9 as a single category because the source combines Unknown and Not Applicable. No raw-data or mapping change is permitted; the limitation is documented and not hidden.
+10. **Weighted stratification is a greedy approximation.** The splitter balances represented weight deterministically, but it is not an optimal constrained partition. Record per-fold rows, `sum(count)`, and weighted prevalence; a material imbalance invalidates the run or must be documented.
+11. **Exact bitwise reproducibility is not guaranteed.** The achievable target is repeatable results under the same data, code, configuration, seed, hardware, and pinned environment, with any residual numerical differences documented.
 
 ## 11. Pre-run checklist
 
@@ -230,18 +239,19 @@ Recording rules:
 3. Record `git rev-parse HEAD`, `git status --short`, and the split/preprocessing file hashes.
 4. Call `set_global_seeds()` before any model or random operation.
 5. Load Training and Validation with `load_split()`; never load Test.
-6. Apply saved encoders with transform only; fit the MLP scaler on Training only if used.
+6. Apply saved encoders with transform only; build the MLP model pipeline so its `StandardScaler` is fitted per CV training fold and on full Training for the final model.
 7. Construct each estimator with `random_state=RANDOM_STATE` and `n_jobs=N_JOBS` where supported.
-8. Save `config.json`, metrics, predictions, model artifact, log, and registry row.
-9. Verify that no Test file was read and no split or preprocessing artifact was modified.
+8. Build folds with `WeightedStratifiedKFold` over Training only; pass `count` to both `fit` and weighted scoring.
+9. Save `config.json`, fold diagnostics, metrics, predictions, model artifact, log, and registry row.
+10. Verify that no Test file was read and no split or preprocessing artifact was modified.
 
 ## 12. Open decisions
 
-1. Select the final Gradient Boosting library; only scikit-learn is installed and verified today.
-2. Confirm scikit-learn MLP as the final MLP framework, or install and pin PyTorch and re-validate the deterministic settings.
+1. **Resolved: Gradient Boosting library.** scikit-learn `GradientBoostingClassifier` is fixed for this phase; no external library is installed or used.
+2. **Resolved: MLP framework.** scikit-learn `MLPClassifier` with `early_stopping=False` and an in-pipeline `StandardScaler`; PyTorch remains a conditional future option.
 3. Decide whether multi-seed robustness runs are required and, if so, fix the seed list before comparisons.
 4. Pin dependency versions and create a reproducible environment lock before final model comparison.
 5. Confirm whether `outputs/training/experiments/registry.csv` is the official registry or whether JSONL is preferred.
-6. Resolve the pending `surgmeno`/`hrt` preprocessing recode before any official experiment.
+6. **Resolved: `surgmeno`/`hrt` code 9.** Keep code 9 as one category; the source combines Unknown and Not Applicable, and raw data/mapping are unchanged.
 
 Last updated: 2026-11-04

@@ -1,0 +1,5 @@
+model,note,threshold,roc_auc,pr_auc,recall,specificity,precision,brier
+logistic_regression,SECONDARY row-equal diagnostic; ignores count; never used for selection,0.5,0.5225031109293429,0.03639571106216283,0.0,1.0,,0.03557829582536822
+random_forest,SECONDARY row-equal diagnostic; ignores count; never used for selection,0.5,0.44605645104087654,0.03142719793178894,0.0,1.0,,0.03565765143803732
+gradient_boosting,SECONDARY row-equal diagnostic; ignores count; never used for selection,0.5,0.537995382670104,0.03722561344116855,0.0,1.0,,0.03558086970711518
+mlp,SECONDARY row-equal diagnostic; ignores count; never used for selection,0.5,0.5187623201807703,0.0356003899305665,0.0,0.9999633659376488,0.0,0.03565997224090161

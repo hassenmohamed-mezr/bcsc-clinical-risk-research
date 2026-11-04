@@ -1,0 +1,24 @@
+{
+  "scope": "descriptive development analysis only",
+  "selection": "no threshold is selected or recommended from Validation",
+  "primary_threshold": 0.5,
+  "grid": [
+    0.001,
+    0.0025,
+    0.005,
+    0.0075,
+    0.01,
+    0.02,
+    0.03,
+    0.05,
+    0.075,
+    0.1,
+    0.15,
+    0.2,
+    0.3,
+    0.4,
+    0.5
+  ],
+  "table": "D:\\depi pro\\BCSC_Risk_Estimation\\outputs\\training\\metrics\\threshold_sensitivity_val.csv",
+  "plot": "D:\\depi pro\\BCSC_Risk_Estimation\\outputs\\training\\plots\\threshold_sensitivity_val.png"
+}

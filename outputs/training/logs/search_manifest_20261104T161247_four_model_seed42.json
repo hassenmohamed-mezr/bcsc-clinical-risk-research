@@ -1,0 +1,247 @@
+{
+  "run_id": "20261104T161247_four_model_seed42",
+  "created": "2026-11-04T16:46:48",
+  "purpose": "Training-only hyperparameter search, final fit, sigmoid calibration, Validation comparison",
+  "test_accessed": false,
+  "validation_used_for_tuning": false,
+  "validation_used_for_calibration": false,
+  "selection_rule": "Highest mean count-weighted PR-AUC across the five Training-only weighted cancer-stratified folds; ties break on mean weighted ROC-AUC, then mean negative Brier, then candidate id.",
+  "models": [
+    "gradient_boosting"
+  ],
+  "grids": {
+    "gradient_boosting": [
+      {
+        "learning_rate": 0.03,
+        "n_estimators": 100,
+        "max_depth": 2,
+        "subsample": 0.8
+      },
+      {
+        "learning_rate": 0.03,
+        "n_estimators": 100,
+        "max_depth": 2,
+        "subsample": 1.0
+      },
+      {
+        "learning_rate": 0.03,
+        "n_estimators": 100,
+        "max_depth": 3,
+        "subsample": 0.8
+      },
+      {
+        "learning_rate": 0.03,
+        "n_estimators": 100,
+        "max_depth": 3,
+        "subsample": 1.0
+      },
+      {
+        "learning_rate": 0.03,
+        "n_estimators": 200,
+        "max_depth": 2,
+        "subsample": 0.8
+      },
+      {
+        "learning_rate": 0.03,
+        "n_estimators": 200,
+        "max_depth": 2,
+        "subsample": 1.0
+      },
+      {
+        "learning_rate": 0.03,
+        "n_estimators": 200,
+        "max_depth": 3,
+        "subsample": 0.8
+      },
+      {
+        "learning_rate": 0.03,
+        "n_estimators": 200,
+        "max_depth": 3,
+        "subsample": 1.0
+      },
+      {
+        "learning_rate": 0.05,
+        "n_estimators": 100,
+        "max_depth": 2,
+        "subsample": 0.8
+      },
+      {
+        "learning_rate": 0.05,
+        "n_estimators": 100,
+        "max_depth": 2,
+        "subsample": 1.0
+      },
+      {
+        "learning_rate": 0.05,
+        "n_estimators": 100,
+        "max_depth": 3,
+        "subsample": 0.8
+      },
+      {
+        "learning_rate": 0.05,
+        "n_estimators": 100,
+        "max_depth": 3,
+        "subsample": 1.0
+      },
+      {
+        "learning_rate": 0.05,
+        "n_estimators": 200,
+        "max_depth": 2,
+        "subsample": 0.8
+      },
+      {
+        "learning_rate": 0.05,
+        "n_estimators": 200,
+        "max_depth": 2,
+        "subsample": 1.0
+      },
+      {
+        "learning_rate": 0.05,
+        "n_estimators": 200,
+        "max_depth": 3,
+        "subsample": 0.8
+      },
+      {
+        "learning_rate": 0.05,
+        "n_estimators": 200,
+        "max_depth": 3,
+        "subsample": 1.0
+      },
+      {
+        "learning_rate": 0.1,
+        "n_estimators": 100,
+        "max_depth": 2,
+        "subsample": 0.8
+      },
+      {
+        "learning_rate": 0.1,
+        "n_estimators": 100,
+        "max_depth": 2,
+        "subsample": 1.0
+      },
+      {
+        "learning_rate": 0.1,
+        "n_estimators": 100,
+        "max_depth": 3,
+        "subsample": 0.8
+      },
+      {
+        "learning_rate": 0.1,
+        "n_estimators": 100,
+        "max_depth": 3,
+        "subsample": 1.0
+      },
+      {
+        "learning_rate": 0.1,
+        "n_estimators": 200,
+        "max_depth": 2,
+        "subsample": 0.8
+      },
+      {
+        "learning_rate": 0.1,
+        "n_estimators": 200,
+        "max_depth": 2,
+        "subsample": 1.0
+      },
+      {
+        "learning_rate": 0.1,
+        "n_estimators": 200,
+        "max_depth": 3,
+        "subsample": 0.8
+      },
+      {
+        "learning_rate": 0.1,
+        "n_estimators": 200,
+        "max_depth": 3,
+        "subsample": 1.0
+      }
+    ]
+  },
+  "candidate_counts": {
+    "gradient_boosting": 24
+  },
+  "selected_candidates": {
+    "gradient_boosting": {
+      "candidate_id": "gradient_boosting_021",
+      "params": {
+        "learning_rate": 0.1,
+        "n_estimators": 200,
+        "max_depth": 2,
+        "subsample": 1.0
+      },
+      "mean_pr_auc": 0.008291336041341874,
+      "mean_roc_auc": 0.631928005505103,
+      "mean_neg_brier": -0.004854590866248082
+    }
+  },
+  "cross_validation": {
+    "n_splits": 5,
+    "splitter": "WeightedStratifiedKFold",
+    "seed": 42,
+    "weight_column": "count",
+    "primary_scoring": "pr_auc",
+    "row_expansion": false
+  },
+  "calibration": {
+    "method": "sigmoid",
+    "ensemble": false,
+    "data": "Training only"
+  },
+  "environment": {
+    "python": "3.15.0",
+    "platform": "Windows-11-10.0.26300-SP0",
+    "numpy": "2.5.4",
+    "pandas": "3.1.0",
+    "scipy": "1.18.1",
+    "scikit_learn": "1.9.1",
+    "joblib": "1.6.0",
+    "random_state": 42,
+    "n_jobs": 1,
+    "default_threshold": 0.5,
+    "thread_environment": {
+      "PYTHONHASHSEED": null,
+      "OMP_NUM_THREADS": null,
+      "MKL_NUM_THREADS": null,
+      "OPENBLAS_NUM_THREADS": null,
+      "NUMEXPR_NUM_THREADS": null,
+      "CUBLAS_WORKSPACE_CONFIG": null
+    },
+    "torch": null
+  },
+  "encoders": {
+    "onehot": {
+      "path": "D:\\depi pro\\BCSC_Risk_Estimation\\models\\preprocessing\\onehot_pipeline.joblib",
+      "size_bytes": 2667,
+      "sha256": "cb4625af62f04c5f3980a6b9734ef90f71201063d45959b957f7d40bbe6458f4"
+    },
+    "ordinal_tree": {
+      "path": "D:\\depi pro\\BCSC_Risk_Estimation\\models\\preprocessing\\ordinal_tree_pipeline.joblib",
+      "size_bytes": 2759,
+      "sha256": "a95345c4932be9623d6b6c29f7d3e5b906ded00485488b96dd63ca218962139d"
+    }
+  },
+  "preprocessing_metadata": {
+    "path": "D:\\depi pro\\BCSC_Risk_Estimation\\models\\preprocessing\\preprocessing_metadata.json",
+    "size_bytes": 2319,
+    "sha256": "8029e005e0b72ddb984849843191f49b087c941f7a01e7eeaa22d253e1bfbba6"
+  },
+  "feature_order": [
+    "agegrp",
+    "bmi",
+    "agefirst",
+    "menopaus",
+    "surgmeno",
+    "hrt",
+    "nrelbc",
+    "density",
+    "brstproc",
+    "lastmamm"
+  ],
+  "target": "cancer",
+  "positive_class": 1,
+  "weight": "count",
+  "threshold": 0.5,
+  "random_state": 42,
+  "n_jobs": 1,
+  "log": "D:\\depi pro\\BCSC_Risk_Estimation\\outputs\\training\\logs\\training_run_20261104T161247_four_model_seed42.log"
+}

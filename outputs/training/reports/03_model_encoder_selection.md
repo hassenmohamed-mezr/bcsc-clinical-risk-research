@@ -2,14 +2,19 @@
 
 Date: 2026-11-04. Scope: choose between the existing `onehot_pipeline.joblib` (43 columns) and `ordinal_tree_pipeline.joblib` (26 columns) for four planned model families. No model was trained, no encoder was modified or refit, and no test data was used.
 
+> **Status: open items resolved by report 07.** The final experiment decisions are in
+> `outputs/training/reports/07_final_experiment_decisions.md`. Gradient Boosting is fixed to
+> scikit-learn `GradientBoostingClassifier`, MLP scaling is a step inside the MLP model pipeline,
+> Logistic Regression has no scaler, and `surgmeno`/`hrt` code 9 stays one category.
+
 ## Recommendation
 
 | Model family | Existing pipeline | Scaling | Additional transformation | Rationale |
 |---|---|---|---|---|
-| Logistic Regression | `onehot` | Not required; optional train-fitted scaler | None | Avoids false linear effects from ordinal codes; all 43 inputs are 0/1 and comparable. |
+| Logistic Regression | `onehot` | None | None | Avoids false linear effects from ordinal codes; all 43 inputs are 0/1 and comparable, so no scaler is needed. |
 | Random Forest | `ordinal_tree` | Not required | None | Trees use category order, not numeric distance; compact 26-column representation. |
-| Gradient Boosting | `ordinal_tree` (numeric-matrix implementations) | Not required | None for the existing pipeline | Trees split ordinal ranks without assuming equal spacing; implementation caveat below. |
-| MLP Neural Network | `onehot` | Required | `StandardScaler` fitted on Training output only | Avoids artificial ordinal distances; scaling stabilises optimisation. |
+| Gradient Boosting | `ordinal_tree` | Not required | None for the existing pipeline | Trees split ordinal ranks without assuming equal spacing; scikit-learn `GradientBoostingClassifier` is fixed for this phase. |
+| MLP Neural Network | `onehot` | `StandardScaler` inside the model pipeline | `SampleWeightPipeline([StandardScaler, MLPClassifier])` | Avoids artificial ordinal distances; the scaler is fitted per CV training fold and serialized with the MLP. |
 
 ## Evaluation
 
@@ -22,29 +27,34 @@ Date: 2026-11-04. Scope: choose between the existing `onehot_pipeline.joblib` (4
 
 ### Model-by-model suitability
 
-**Logistic Regression — `onehot`.** A linear model assigns one coefficient per encoded column. Ordinal ranks would force a constant change per category step and could create false effects for `bmi`, `density`, and `nrelbc`. One-hot avoids this. Scaling is not required because all columns are binary and therefore already on a common scale; it is optional if a solver or regularisation experiment needs standardised inputs.
+**Logistic Regression — `onehot`.** A linear model assigns one coefficient per encoded column. Ordinal ranks would force a constant change per category step and could create false effects for `bmi`, `density`, and `nrelbc`. One-hot avoids this. No scaler is used: all columns are binary indicators and therefore already on a common scale.
 
 **Random Forest — `ordinal_tree`.** Random forests are invariant to monotonic feature transformations. The ordinal ranks preserve the documented order of the four ordered features, the Unknown flags isolate missingness, and nominal features remain one-hot. The 26-column matrix is more compact than 43 columns. No scaling is needed. `onehot` is a valid fallback but offers no advantage for this model.
 
-**Gradient Boosting — `ordinal_tree` for numeric-matrix implementations.** The same tree argument applies to sklearn `GradientBoostingClassifier` and `HistGradientBoostingClassifier`, XGBoost, and LightGBM when they receive a numeric matrix. No scaling is needed.
-Implementation caveat: CatBoost, LightGBM, and `HistGradientBoostingClassifier` can optionally treat raw categorical codes natively. That would require a different preprocessing route; raw BCSC codes must not be passed as ordinary numeric features without declaring them categorical. The existing `ordinal_tree` is the common, implementation-neutral choice; `onehot` is the fallback when a specific implementation performs better with explicit indicator columns.
+**Gradient Boosting — `ordinal_tree` with scikit-learn `GradientBoostingClassifier`.** The same tree argument applies to scikit-learn `GradientBoostingClassifier` when it receives a numeric matrix. No scaling is needed. This phase does not use XGBoost, LightGBM, CatBoost, or `HistGradientBoostingClassifier`; native categorical handling is a future, separately documented experiment that would require a different preprocessing route. Raw BCSC codes must not be passed as ordinary numeric features without declaring them categorical.
 
-**MLP Neural Network — `onehot` plus scaling.** The MLP can learn nonlinear relationships, but feeding ordinal ranks still imposes an arbitrary numeric geometry, especially for `bmi`, `density`, and `nrelbc`. One-hot gives the network explicit category inputs. A `StandardScaler` is required for stable optimisation; it must be fitted on the encoded Training matrix only and applied unchanged to Validation and Test. The existing artifacts contain no scaler, so this is an additional downstream step, not a change to either encoder.
+**MLP Neural Network — `onehot` plus in-pipeline scaling.** The MLP can learn nonlinear relationships, but feeding ordinal ranks still imposes an arbitrary numeric geometry, especially for `bmi`, `density`, and `nrelbc`. One-hot gives the network explicit category inputs. A `StandardScaler` is required for stable optimisation and is the first step of the MLP model pipeline:
+
+```python
+SampleWeightPipeline([("scaler", StandardScaler()), ("classifier", MLPClassifier(...))])
+```
+
+Fitting the pipeline on a CV training fold fits the scaler only on that fold's training rows; the fitted scaler then transforms that fold's validation rows unchanged. The final model fits the same pipeline on the full Training matrix. The scaler and MLP are serialized together as one joblib artifact; the existing encoder artifacts contain no scaler and are not modified.
 
 ### Scaling and transformations
 
-- **Logistic Regression:** no mandatory scaling for the 43 binary columns. If scaling is added for solver or regularisation reasons, fit it on Training only.
+- **Logistic Regression:** no scaler. The 43 binary indicator columns are already on a common scale; adding a scaler would be a separate documented experiment.
 - **Random Forest / Gradient Boosting:** no scaling; tree splits are invariant to monotonic scaling.
-- **MLP:** `StandardScaler` required; fit on `onehot` Training output only. Do not fit on Validation or Test.
+- **MLP:** `StandardScaler` inside the model pipeline, fitted per CV training fold and on full Training for the final model. Never fitted on Validation or Test.
 - **All models:** no PCA, feature selection, or imputation is required at this stage; the existing encoders already preserve Unknown as explicit information.
 - All four sklearn candidates accept `sample_weight`, so `count` can be supplied during training without row expansion.
 
 ## Unresolved decisions
 
-1. Select the final Gradient Boosting implementation and decide whether to use native categorical handling or the existing numeric `ordinal_tree` route.
-2. Decide whether the MLP scaler should be a separate artifact or wrapped with the encoder in a new serialised composite pipeline. Either way, it must be fitted on Training only.
-3. Decide whether Logistic Regression should use the optional scaler; it is not required for the current binary one-hot matrix.
-4. Resolve the pending `surgmeno`/`hrt` Unknown vs Not Applicable recode before final model comparison.
+1. **Resolved: Gradient Boosting implementation.** Use scikit-learn `GradientBoostingClassifier` with the existing `ordinal_tree` route. Native categorical handling and external boosting libraries are deferred.
+2. **Resolved: MLP scaler packaging.** The scaler is a step inside `SampleWeightPipeline` and is serialized with the MLP as one artifact. It is fitted per CV training fold.
+3. **Resolved: Logistic Regression scaling.** No scaler; the one-hot matrix is predominantly binary indicators.
+4. **Resolved: `surgmeno`/`hrt` code 9.** Keep code 9 as one category; the source combines Unknown and Not Applicable, and raw data/mapping are unchanged. See report 07.
 5. Confirm class-imbalance handling separately; it is a model-training decision, not an encoder choice.
 
 Last updated: 2026-11-04

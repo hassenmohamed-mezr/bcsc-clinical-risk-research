@@ -2,6 +2,12 @@
 
 Date: 2026-11-04. Scope: define one comparable evaluation protocol for Logistic Regression, Random Forest, Gradient Boosting, and MLP on the BCSC splits. This document defines metrics and reporting rules only. No model was trained or evaluated, no preprocessing artifact was changed, and `test.csv` was not opened.
 
+> **Status: open items partly resolved by report 07.** The final experiment decisions are in
+> `outputs/training/reports/07_final_experiment_decisions.md`. Weighted PR-AUC is confirmed as the
+> primary CV selection metric, Gradient Boosting is fixed to scikit-learn, the MLP scaler is bundled
+> in the model pipeline, and `surgmeno`/`hrt` code 9 stays one category. The metric definitions in
+> this report remain authoritative.
+
 ## 1. Evaluation rules
 
 - **Fit on Training, compare on Validation.** Models are fitted on `train` with `count` as `sample_weight`; model comparison uses `val` only. `test` is evaluated once, after the model, encoder, threshold rule, and protocol are frozen.
@@ -9,8 +15,9 @@ Date: 2026-11-04. Scope: define one comparable evaluation protocol for Logistic 
 - **Same rows for every model.** Every model is scored on every Validation row. Rows are never dropped per model; a model that cannot score all rows is non-comparable and must be fixed.
 - **Probabilities are required.** Each model must expose the positive-class probability `p_i = P(cancer=1 | x_i)` through `predict_proba`, using `classes_` to select the `cancer=1` column. Raw `decision_function` scores are not accepted for probability metrics such as Brier, and are not used for the unified comparison.
 - **Weights are frequency weights.** `count` is applied as `sample_weight` in fitting and in every metric. No row expansion is performed; weighted formulas are mathematically equivalent to expanding each row `count` times.
-- **Transform-only preprocessing.** The saved encoders are applied with `transform`, never refit. The MLP scaler, if used, is fitted on Training output only.
-- **No composite score.** All six metrics are reported. No single derived score replaces the table; if a primary criterion is pre-specified, the full table is still reported, and no post-hoc metric may be introduced to favour a model.
+- **Transform-only preprocessing.** The saved encoders are applied with `transform`, never refit. The MLP `StandardScaler` is a step inside the MLP model pipeline: it is fitted on each CV training fold and on the full Training matrix for the final model, never on Validation or Test.
+- **Primary selection metric.** Weighted PR-AUC (average precision with `count` as `sample_weight`) is the primary CV hyperparameter-selection metric. Weighted ROC-AUC and negative Brier are supporting scores. Unweighted/row-equal metrics are secondary diagnostics only and must never drive model selection.
+- **No composite score.** All six metrics are reported. No single derived score replaces the table; the full weighted table is always reported, and no post-hoc metric may be introduced to favour a model.
 
 ## 2. Labels and threshold
 
@@ -192,22 +199,22 @@ A model with any failed validity check is excluded from comparison until fixed; 
 
 - Threshold-independent metrics answer whether a model ranks and calibrates risk well; threshold-dependent metrics answer what happens at the fixed `t = 0.5` operating point. Both are required.
 - Because weighted prevalence is approximately `0.49%`, ROC-AUC can appear high even when positive-class performance is modest. PR-AUC must be interpreted against `π ≈ 0.0049`, and recall/precision must be read together with specificity.
-- No model is declared better on a single metric. Any selection rule must be agreed before comparing results and must use the full weighted table; a candidate primary criterion is PR-AUC with ROC-AUC and Brier as supporting metrics, but this remains an open decision.
+- No model is declared better on a single metric. The pre-specified selection hierarchy is: weighted PR-AUC as the primary criterion, with weighted ROC-AUC and weighted Brier as supporting metrics and the full weighted table always reported. The hierarchy was confirmed in report 07 and must not be changed after seeing results.
 - Small differences must not be presented as meaningful without a pre-specified uncertainty method.
 
 ## 8. Open decisions
 
-1. Confirm whether PR-AUC is the primary selection metric, or define another pre-specified hierarchy; no hierarchy is fixed by this document.
+1. **Resolved: PR-AUC is the primary selection metric.** Weighted PR-AUC is primary; weighted ROC-AUC and Brier are supporting; unweighted metrics are secondary diagnostics only. Confirmed in report 07.
 2. Decide whether confidence intervals or repeated weighted bootstrap will be used; if yes, fix the seed and resampling unit before evaluation.
 3. Define the clinical operating threshold if one is needed; `t = 0.5` is only the initial statistical default.
 4. Decide whether the optional Brier Skill Score and threshold sweeps will be included in the main report or an appendix.
-5. Decide whether unweighted diagnostics will be reported at all; weighted results remain authoritative.
-6. Select the final Gradient Boosting implementation and MLP scaler packaging per report 03; these affect model inputs but not the metric definitions.
-7. Resolve the pending `surgmeno`/`hrt` recode before model comparison; a later encoding change invalidates comparisons made with the old artifact.
+5. Unweighted diagnostics are optional and secondary only; weighted results remain authoritative. Any unweighted table must be labelled as treating each aggregated row equally.
+6. **Resolved: Gradient Boosting and MLP packaging.** scikit-learn `GradientBoostingClassifier` is fixed; the MLP uses One-Hot plus an in-pipeline `StandardScaler` serialized with the classifier. See report 07.
+7. **Resolved: `surgmeno`/`hrt` code 9.** Kept as one category; the source combines Unknown and Not Applicable; raw data and mapping are unchanged. See report 07.
 
 ## 9. Reference calculation pattern
 
-The following pattern is illustrative and was not executed against any model output. It assumes aligned arrays `y`, `p`, `w` and both classes present.
+The following pattern is illustrative. It assumes aligned arrays `y`, `p`, `w` and both classes present. The shared weighted implementation now lives in `src/training/cv.py` (`weighted_metrics`, `weighted_scores`, `cross_validate_weighted`); use it rather than re-deriving the formulas per model.
 
 ```python
 import numpy as np
@@ -229,6 +236,6 @@ roc_auc = roc_auc_score(y, p, sample_weight=w)
 pr_auc = average_precision_score(y, p, sample_weight=w)
 ```
 
-This pattern is a definition aid, not an implemented evaluation module. No shared metrics utility exists in the repository yet.
+This pattern is a definition aid. The shared implementation in `src/training/cv.py` is the executable reference and is covered by `tests/test_training_cv.py`; no project model has been fitted.
 
 Last updated: 2026-11-04

@@ -1,0 +1,56 @@
+{
+  "model": "logistic_regression",
+  "display_name": "Logistic Regression",
+  "estimator": "sklearn.linear_model.LogisticRegression",
+  "encoder": "onehot",
+  "encoder_width": 43,
+  "scaler": null,
+  "selected_candidate": "logistic_regression_001",
+  "selected_params": {
+    "C": 0.1,
+    "solver": "lbfgs"
+  },
+  "cv": {
+    "mean_pr_auc": 0.00829032168635534,
+    "std_pr_auc": 0.000371778409678606,
+    "mean_roc_auc": 0.6308427726120697,
+    "std_roc_auc": 0.006086949333779994,
+    "mean_neg_brier": -0.00485460074139491,
+    "std_neg_brier": 2.347044985662128e-06,
+    "n_splits": 5,
+    "splitter": "WeightedStratifiedKFold",
+    "seed": 42
+  },
+  "calibration": {
+    "method": "sigmoid",
+    "ensemble": false,
+    "data": "Training only"
+  },
+  "feature_order": [
+    "agegrp",
+    "bmi",
+    "agefirst",
+    "menopaus",
+    "surgmeno",
+    "hrt",
+    "nrelbc",
+    "density",
+    "brstproc",
+    "lastmamm"
+  ],
+  "target": "cancer",
+  "positive_class": 1,
+  "weight": "count",
+  "threshold": 0.5,
+  "random_state": 42,
+  "n_jobs": 1,
+  "fit_seconds": 2.2955659999997806,
+  "fit_warnings": [
+    "'n_jobs' has no effect since 1.8 and will be removed in 1.10. You provided 'n_jobs=1', please leave it unspecified.",
+    "'penalty' was deprecated in version 1.8 and will be removed in 1.10. To avoid this warning, leave 'penalty' set to its default value and use 'l1_ratio' or 'C' instead. Use l1_ratio=0 instead of penalty='l2', l1_ratio=1 instead of penalty='l1', l1_ratio set to a float between 0 and 1 instead of penalty='elasticnet', and C=np.inf instead of penalty=None."
+  ],
+  "artifact": "D:\\depi pro\\BCSC_Risk_Estimation\\models\\trained\\logistic_regression_calibrated.joblib",
+  "artifact_sha256": "f258be640bdf3c7d57cbf0e0dadb05c3b988f6a024954c8ba4d7c6bcbb2e0e3d",
+  "encoder_artifact": "D:\\depi pro\\BCSC_Risk_Estimation\\models\\preprocessing\\onehot_pipeline.joblib",
+  "encoder_sha256": "cb4625af62f04c5f3980a6b9734ef90f71201063d45959b957f7d40bbe6458f4"
+}
