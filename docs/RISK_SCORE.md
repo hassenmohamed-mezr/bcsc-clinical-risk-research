@@ -66,6 +66,21 @@ Band boundaries:
 
 Smooth vs empirical percentile: mean absolute difference 1.4187 points, max 2.9880 points.
 
+## Output semantics
+
+The inference wrapper exposes two different values:
+
+- `weighted_average_pct`: estimated model probability from the configured
+  weighted average of all active models. This is the value shown as
+  `Estimated Risk` in the desktop interface.
+- `risk_score`: relative percentile score derived from the Logistic Regression
+  probability. It is shown separately as `Relative Risk Score` and is not a
+  probability.
+
+The configured models and their weighted average are implemented in
+`SUPMT.py`; the score calibration remains tied to the Logistic Regression
+validation distribution.
+
 ## Usage
 
 ```python

@@ -87,7 +87,7 @@ class RiskApp:
             pady=(16, 8),
         )
 
-        self.result = ttk.Label(frame, text="", style="Result.TLabel", anchor="center")
+        self.result = ttk.Label(frame, text="", style="Result.TLabel", anchor="center", justify="center")
         self.result.grid(row=len(fields) + 1, column=0, columnspan=2, pady=(8, 2))
         self.error = ttk.Label(frame, text="", style="Error.TLabel", anchor="center", wraplength=360)
         self.error.grid(row=len(fields) + 2, column=0, columnspan=2, pady=(2, 0))
@@ -170,8 +170,16 @@ class RiskApp:
             self.error.configure(text=str(exc))
             return
 
+        probability = min(100.0, max(0.0, float(output["weighted_average_pct"])))
         score = min(100.0, max(0.0, float(output["risk_score"])))
-        self.result.configure(text=f"{score:.1f}%")
+        unknown_count = int(output["unknown_field_count"])
+        self.result.configure(
+            text=(
+                f"Estimated Risk: {probability:.2f}%\n"
+                f"Relative Risk Score: {score:.1f}/100\n"
+                f"Unknown Fields: {unknown_count}"
+            )
+        )
 
 
 def main() -> None:

@@ -7,7 +7,6 @@ import io
 from typing import Any
 
 import SUPMT
-import SUPMT_structured
 from risk_score.score import BANDS, load_parameters, probability_to_score, risk_band
 
 
@@ -18,6 +17,7 @@ def predict_risk_score(patient: Any, include_gb_check: bool = True) -> dict[str,
     params = load_parameters()
     lr_params = params["logistic_regression"]
     p_lr = float(result["logistic_regression"])
+    p_weighted = float(result["weighted_average"])
     score_raw = probability_to_score(p_lr, lr_params)
     score = round(score_raw, 1)
     band_key, band_label = risk_band(score)
@@ -34,12 +34,16 @@ def predict_risk_score(patient: Any, include_gb_check: bool = True) -> dict[str,
         "risk_band_label": band_label,
         "lr_probability": p_lr,
         "lr_probability_pct": p_lr * 100.0,
+        "weighted_average": p_weighted,
+        "weighted_average_pct": p_weighted * 100.0,
+        "unknown_field_count": unknown_count,
         "reference_prevalence_pct": params["weighted_prevalence"] * 100.0,
-        "relative_to_reference": p_lr / params["weighted_prevalence"] if params["weighted_prevalence"] > 0 else float("inf"),
+        "relative_to_reference": p_weighted / params["weighted_prevalence"] if params["weighted_prevalence"] > 0 else float("inf"),
         "interpretation": (
-            f"ترتيب الحالة أعلى من {score:.0f}% من الحالات المرجعية. "
-            f"الخطر السنوي المقدّر {p_lr * 100:.2f}% مقابل {params['weighted_prevalence'] * 100:.2f}% كمتوسط مرجعي. "
-            "الدرجة مقياس ترتيب نسبي وليست احتمال إصابة."
+            f"The relative score places this case above {score:.0f}% of reference cases. "
+            f"The estimated model probability is {p_weighted * 100:.2f}% "
+            f"versus {params['weighted_prevalence'] * 100:.2f}% reference prevalence. "
+            "The relative score is not a probability."
         ),
         "warnings": warnings_list,
         "reference": {
@@ -59,7 +63,7 @@ def predict_risk_score(patient: Any, include_gb_check: bool = True) -> dict[str,
         gap = abs(score_raw - score_gb)
         disagree = gap > params["gb_gap_threshold"]
         if disagree:
-            warnings_list.append("LR وGB مختلفين في الترتيب")
+            warnings_list.append("Logistic Regression and Gradient Boosting rankings differ")
         out["gb_check"] = {
             "gb_probability": p_gb,
             "gb_score": round(score_gb, 1),

@@ -135,9 +135,10 @@ class TestRiskScoreHard(unittest.TestCase):
         with contextlib.redirect_stdout(io.StringIO()):
             base = SUPMT.predict_patient(patient)
         out = SUPMT_score.predict_risk_score(patient)
-        self.assertEqual(set(out.keys()), {"risk_score", "risk_band_key", "risk_band_label", "lr_probability", "lr_probability_pct", "reference_prevalence_pct", "relative_to_reference", "interpretation", "warnings", "reference", "gb_check"})
+        self.assertEqual(set(out.keys()), {"risk_score", "risk_band_key", "risk_band_label", "lr_probability", "lr_probability_pct", "weighted_average", "weighted_average_pct", "unknown_field_count", "reference_prevalence_pct", "relative_to_reference", "interpretation", "warnings", "reference", "gb_check"})
         self.assertTrue(0 <= out["risk_score"] <= 100)
         self.assertAlmostEqual(out["lr_probability"], base["logistic_regression"], places=12)
+        self.assertAlmostEqual(out["weighted_average"], base["weighted_average"], places=12)
         self.assertEqual(out["risk_band_label"], risk_band(out["risk_score"])[1])
 
     def test_wrapper_parity_accepted(self):
